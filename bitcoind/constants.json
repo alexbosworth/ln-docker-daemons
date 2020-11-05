@@ -1,0 +1,4 @@
+{
+  "dockerBitcoindImage": "ruimarinho/bitcoin-core:0.20.1",
+  "rpcUser": "bitcoinrpc"
+}

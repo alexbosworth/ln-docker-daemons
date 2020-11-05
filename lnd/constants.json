@@ -1,0 +1,3 @@
+{
+  "dockerLndImage": "guggero/lnd:v0.11.1-beta"
+}
