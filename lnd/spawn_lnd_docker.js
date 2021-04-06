@@ -97,6 +97,7 @@ module.exports = (args, cbk) => {
             '--nobootstrap',
             `--rpclisten=0.0.0.0:10009`,
             '--trickledelay=1',
+            '--unsafe-disconnect',
           ],
           image: dockerLndImage,
           ports: {
