@@ -7,16 +7,16 @@
     "url": "https://github.com/alexbosworth/ln-docker-daemons/issues"
   },
   "dependencies": {
-    "async": "3.2.0",
-    "asyncjs-util": "1.2.5",
-    "dockerode": "3.2.1",
-    "lightning": "3.3.2",
-    "node-fetch": "2.6.1",
+    "@alexbosworth/node-fetch": "2.6.2",
+    "async": "3.2.1",
+    "asyncjs-util": "1.2.6",
+    "dockerode": "3.3.1",
+    "lightning": "4.7.0",
     "tar-stream": "2.2.0"
   },
   "description": "Spawn and control LN Docker daemons",
   "devDependencies": {
-    "tap": "15.0.2"
+    "@alexbosworth/tap": "15.0.10"
   },
   "engines": {
     "node": ">=10.12.0"
@@ -34,5 +34,5 @@
   "scripts": {
     "test": "tap --branches=1 --functions=1 --lines=1 --statements=1 -j 1 test/bitcoind/*.js test/lnd/*.js"
   },
-  "version": "1.0.1"
+  "version": "1.0.2"
 }
