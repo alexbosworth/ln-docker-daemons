@@ -53,6 +53,38 @@ const {kill} = spawnBitcoindDocker({
 await kill({});
 ```
 
+## `spawnLightningCluster`
+
+Spawn a cluster of nodes
+
+    {
+      [size]: <Total Lightning Nodes Number>
+    }
+
+    @returns via cbk or Promise
+    {
+      nodes: [{
+        id: <Node Public Key Hex String>
+        kill: <Kill Function> ({}, cbk) => {}
+        lnd: <Authenticated LND API Object>
+      }]
+    }
+
+Example:
+
+```node
+const {getIdentity} = require('lightning');
+const {spawnLightningCluster} = require('ln-docker-daemons');
+
+// Launch a lightning node
+const [{lnd, kill}] = spawnLightningCluster({});
+
+const pubilcKey = (await getIdentity({lnd})).public_key;
+
+// Stop the image
+await kill({});
+```
+
 ## spawnLightningDocker
 
 Spawn an LND Docker

@@ -11,6 +11,7 @@
     "async": "3.2.1",
     "asyncjs-util": "1.2.6",
     "dockerode": "3.3.1",
+    "find-free-ports": "3.0.0",
     "lightning": "4.7.0",
     "tar-stream": "2.2.0"
   },
@@ -34,5 +35,5 @@
   "scripts": {
     "test": "tap --branches=1 --functions=1 --lines=1 --statements=1 -j 1 test/bitcoind/*.js test/lnd/*.js"
   },
-  "version": "1.0.2"
+  "version": "1.1.0"
 }
