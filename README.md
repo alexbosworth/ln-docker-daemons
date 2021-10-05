@@ -77,9 +77,9 @@ const {getIdentity} = require('lightning');
 const {spawnLightningCluster} = require('ln-docker-daemons');
 
 // Launch a lightning node
-const [{lnd, kill}] = spawnLightningCluster({});
+const [{lnd, kill}] = await spawnLightningCluster({});
 
-const pubilcKey = (await getIdentity({lnd})).public_key;
+const publicKey = (await getIdentity({lnd})).public_key;
 
 // Stop the image
 await kill({});
