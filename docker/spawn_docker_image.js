@@ -62,6 +62,10 @@ module.exports = ({arguments, expose, image, ports}, cbk) => {
             return;
           }
 
+          if (err.code === 'ECONNREFUSED') {
+            throw [503, 'CannotConnectToDockerDaemon'];
+          }
+
           throw [503, 'UnexpectedErrorGettingDockerImage', {err}];
         }
       }],

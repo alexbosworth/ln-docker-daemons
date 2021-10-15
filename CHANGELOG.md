@@ -1,5 +1,9 @@
 # Versions
 
+## 1.2.0
+
+- `spawnLightningCluster` add `generate` to generate coins for a node
+
 ## 1.1.0
 
 - Add `spawnLightningCluster` to spawn multiple lightning dockers

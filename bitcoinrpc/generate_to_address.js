@@ -10,6 +10,7 @@ const host = 'localhost';
 
   {
     address: <Address to Mine Outputs Towards String>
+    [count]: <Generate Count Number>
     pass: <RPC Password String>
     port: <RPC Port Number>
     user: <RPC Username String>
@@ -20,7 +21,7 @@ const host = 'localhost';
     blocks: <Best Chain Block Height Number>
   }
 */
-module.exports = ({address, pass, port, user}, cbk) => {
+module.exports = ({address, count, pass, port, user}, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
       // Check arguments
@@ -46,7 +47,7 @@ module.exports = ({address, pass, port, user}, cbk) => {
 
       // Execute request
       request: ['validate', ({}, cbk) => {
-        const params = [[address].length, address];
+        const params = [count || [address].length, address];
 
         return rpc({cmd, host, pass, params, port, user}, cbk);
       }],

@@ -21,6 +21,7 @@ const spawnLndDocker = require('./spawn_lnd_docker');
   @returns via cbk or Promise
   {
     cert: <LND Base64 Serialized TLS Cert>
+    generate: ({address, count}, cbk) => <Generate to Address Promise>
     kill: ({}, [cbk]) => <Kill LND Daemon Promise>
     macaroon: <LND Base64 Serialized Macaroon String>
     public_key: <Identity Public Key Hex String>
@@ -114,6 +115,13 @@ module.exports = (args, cbk) => {
 
         return cbk(null, {
           cert: spawnLightningDaemon.cert,
+          generate: ({address, count}) => generateToAddress({
+            address,
+            count,
+            pass: spawnChainDaemon.rpc_pass,
+            port: args.chain_rpc_port,
+            user: spawnChainDaemon.rpc_user,
+          }),
           kill: ({}, cbk) => killDockers({dockers}, cbk),
           macaroon: spawnLightningDaemon.macaroon,
           public_key: spawnLightningDaemon.public_key,

@@ -21,6 +21,7 @@ const portsPerLnd = 6;
   @returns via cbk or Promise
   {
     nodes: [{
+      generate: ({address}, [cbk]) => {}
       id: <Node Public Key Hex String>
       kill: <Kill Function> ({}, cbk) => {}
       lnd: <Authenticated LND API Object>
@@ -49,7 +50,7 @@ module.exports = ({size}, cbk) => {
             lightningRpcPort,
           ] = ports;
 
-          const {cert, kill, macaroon, socket} = await spawnLightningDocker({
+          const lightningDocker = await spawnLightningDocker({
             chain_p2p_port: chainP2pPort,
             chain_rpc_port: chainRpcPort,
             chain_zmq_block_port: chainZmqBlockPort,
@@ -59,11 +60,20 @@ module.exports = ({size}, cbk) => {
             lightning_rpc_port: lightningRpcPort,
           });
 
-          const {lnd} = authenticatedLndGrpc({cert, macaroon, socket});
+          const {lnd} = authenticatedLndGrpc({
+            cert: lightningDocker.cert,
+            macaroon: lightningDocker.macaroon,
+            socket: lightningDocker.socket,
+          });
 
           const id = (await getIdentity({lnd})).public_key;
 
-          return {id, kill, lnd};
+          return {
+            id,
+            lnd,
+            generate: lightningDocker.generate,
+            kill: lightningDocker.kill,
+          };
         });
       }],
 

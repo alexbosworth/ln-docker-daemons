@@ -64,6 +64,7 @@ Spawn a cluster of nodes
     @returns via cbk or Promise
     {
       nodes: [{
+        generate: ({address, [count]}) => {}
         id: <Node Public Key Hex String>
         kill: <Kill Function> ({}, cbk) => {}
         lnd: <Authenticated LND API Object>
@@ -73,13 +74,18 @@ Spawn a cluster of nodes
 Example:
 
 ```node
-const {getIdentity} = require('lightning');
+const {createChainAddress, getIdentity} = require('lightning');
 const {spawnLightningCluster} = require('ln-docker-daemons');
 
 // Launch a lightning node
-const [{lnd, kill}] = await spawnLightningCluster({});
+const {nodes} = await spawnLightningCluster({});
+const [{lnd, generate, kill}] = nodes;
 
-const publicKey = (await getIdentity({lnd})).public_key;
+const pubilcKey = (await getIdentity({lnd})).public_key;
+
+// Generate some coins for the wallet
+const {address} = await createChainAddress({lnd, format: 'p2wpkh'});
+await generate({address, count: 500});
 
 // Stop the image
 await kill({});
