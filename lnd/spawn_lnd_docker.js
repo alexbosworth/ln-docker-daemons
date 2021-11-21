@@ -8,7 +8,8 @@ const {unauthenticatedLndGrpc} = require('lightning');
 const {dockerLndImage} = require('./constants');
 const {spawnDockerImage} = require('./../docker');
 
-const interval = 50;
+const imageName = ver => !!ver ? `lightninglabs/lnd:${ver}` : dockerLndImage;
+const interval = 100;
 const macaroonPath = '/root/.lnd/data/chain/bitcoin/regtest/admin.macaroon';
 const times = 500;
 const tlsCertPath = '/root/.lnd/tls.cert';
@@ -101,7 +102,7 @@ module.exports = (args, cbk) => {
             '--trickledelay=1',
             '--unsafe-disconnect',
           ],
-          image: dockerLndImage,
+          image: imageName(process.env.DOCKER_LND_VERSION),
           ports: {
             '9735/tcp': args.p2p_port,
             '10009/tcp': args.rpc_port,

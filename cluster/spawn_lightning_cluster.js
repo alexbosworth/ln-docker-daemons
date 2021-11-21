@@ -17,7 +17,7 @@ const count = size => size || 1;
 const endPort = 65000;
 const generateAddress = '2N8hwP1WmJrFF5QWABn38y63uYLhnJYJYTF';
 const interval = 10;
-const makeAddress = ({lnd}) => createChainAddress({lnd, format: 'p2wpkh'});
+const makeAddress = ({lnd}) => createChainAddress({lnd});
 const maturity = 100;
 const pairs = n => n.map((x, i) => n.slice(i + 1).map(y => [x, y])).flat();
 const portsPerLnd = 6;
@@ -46,7 +46,7 @@ module.exports = (args, cbk) => {
     return asyncAuto({
       // Spawn nodes
       spawn: async () => {
-        return await asyncRetry({}, async () => {
+        return await asyncRetry({interval, times: 25}, async () => {
           const options = {startPort: between(startPort, endPort)};
 
           // Find ports for the requested daemons

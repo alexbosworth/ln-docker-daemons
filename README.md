@@ -18,6 +18,16 @@ const publicKey = (await getIdentity({lnd})).public_key;
 await kill({});
 ```
 
+## Environment Variables
+
+- `DOCKER_LND_VERSION`: set this to use a custom LND docker image
+
+Example:
+
+```shell
+export DOCKER_LND_VERSION="v0.14.0-beta"
+```
+
 ## spawnBitcoindDocker
 
 Spawn a Bitcoin Core Docker image
@@ -83,11 +93,10 @@ const {spawnLightningCluster} = require('ln-docker-daemons');
 const {nodes} = await spawnLightningCluster({});
 const [{lnd, generate, kill}] = nodes;
 
-const pubilcKey = (await getIdentity({lnd})).public_key;
+const publicKey = (await getIdentity({lnd})).public_key;
 
 // Generate some coins for the wallet
-const {address} = await createChainAddress({lnd, format: 'p2wpkh'});
-await generate({address, count: 500});
+await generate({count: 500});
 
 // Stop the image
 await kill({});

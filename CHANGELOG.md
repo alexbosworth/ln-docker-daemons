@@ -1,5 +1,9 @@
 # Versions
 
+## 2.1.0
+
+- `DOCKER_LND_VERSION`: add environment variable to control docker lnd image
+
 ## 2.0.0
 
 - `spawnLightningCluster`: add `socket` to reveal node LN p2p sockets
