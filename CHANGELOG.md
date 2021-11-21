@@ -1,5 +1,16 @@
 # Versions
 
+## 2.0.0
+
+- `spawnLightningCluster`: add `socket` to reveal node LN p2p sockets
+- `spawnLightningDocker`: add `add_chain_peer` method to add a chain peer
+- `spawnLightningDocker`: add `chain_socket` method for the chain p2p socket
+- `spawnLightningDocker`: add `ln_socket` method for the chain p2p socket
+
+### Breaking Changes
+
+- Node 12+ is required
+
 ## 1.2.0
 
 - `spawnLightningCluster` add `generate` to generate coins for a node

@@ -88,10 +88,6 @@ module.exports = ({cert, cmd, host, params, pass, port, user}, cbk) => {
 
           const {result} = await response.json();
 
-          if (!result) {
-            throw [503, 'ExpectedResultOfRpcRequest'];
-          }
-
           return result;
         } catch (err) {
           if (err.code === 'ECONNRESET') {

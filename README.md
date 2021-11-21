@@ -31,6 +31,7 @@ Spawn a Bitcoin Core Docker image
 
     @returns via cbk or Promise
     {
+      host: <Host String>
       kill: ({}, [cbk]) => <Kill Promise>
       rpc_pass: <RPC Password String>
       rpc_user: <RPC Username String>
@@ -68,6 +69,7 @@ Spawn a cluster of nodes
         id: <Node Public Key Hex String>
         kill: <Kill Function> ({}, cbk) => {}
         lnd: <Authenticated LND API Object>
+        socket: <Node Socket String>
       }]
     }
 
@@ -107,8 +109,11 @@ Spawn an LND Docker
 
     @returns via cbk or Promise
     {
+      add_chain_peer: <Add Peer Function> ({socket}) => {}
       cert: <LND Base64 Serialized TLS Cert>
+      chain_socket: <Chain P2P Socket String>
       kill: ({}, [cbk]) => <Kill LND Daemon Promise>
+      ln_socket: <LN P2P Socket String>
       macaroon: <LND Base64 Serialized Macaroon String>
       public_key: <Identity Public Key Hex String>
       socket: <LND RPC Host:Port Network Address String>

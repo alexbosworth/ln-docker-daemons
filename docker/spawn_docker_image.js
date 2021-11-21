@@ -1,4 +1,5 @@
 const asyncAuto = require('async/auto');
+const asyncRetry = require('async/retry');
 const Dockerode = require('dockerode');
 const {returnResult} = require('asyncjs-util');
 
@@ -125,13 +126,16 @@ module.exports = ({arguments, expose, image, ports}, cbk) => {
 
       // Start the image
       start: ['container', 'docker', ({container, docker}, cbk) => {
-        return container.start(err => {
-          if (!!err) {
-            return cbk([503, 'UnexpectedErrorStartingDockerContainer', {err}]);
-          }
+        return asyncRetry({}, cbk => {
+          return container.start(err => {
+            if (!!err) {
+              return cbk([503, 'UnexpectedErrorStartingContainer', {err}]);
+            }
 
-          return cbk();
-        });
+            return cbk();
+          });
+        },
+        cbk);
       }],
 
       // Get the details about the container

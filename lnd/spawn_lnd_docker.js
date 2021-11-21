@@ -79,6 +79,8 @@ module.exports = (args, cbk) => {
 
         return spawnDockerImage({
           arguments: [
+            '--accept-keysend',
+            '--allow-circular-route',
             '--autopilot.heuristic=externalscore:0.5',
             '--autopilot.heuristic=preferential:0.5',
             '--bitcoin.active',
@@ -123,23 +125,26 @@ module.exports = (args, cbk) => {
 
         const {lnd} = unauthenticatedLndGrpc({cert, socket});
 
-        lnd.unlocker.genSeed({}, (err, res) => {
-          if (!!err) {
-            return cbk([503, 'UnexpectedErrorGeneratingSeed', {err}]);
-          }
-
-          lnd.unlocker.initWallet({
-            cipher_seed_mnemonic: res.cipher_seed_mnemonic,
-            wallet_password: Buffer.from('password', 'utf8'),
-          },
-          err => {
+        return asyncRetry({interval, times}, cbk => {
+          return lnd.unlocker.genSeed({}, (err, res) => {
             if (!!err) {
-              return cbk([503, 'UnexpectedErrorInitializingWallet', {err}]);
+              return cbk([503, 'UnexpectedErrorGeneratingSeed', {err}]);
             }
 
-            return cbk();
+            lnd.unlocker.initWallet({
+              cipher_seed_mnemonic: res.cipher_seed_mnemonic,
+              wallet_password: Buffer.from('password', 'utf8'),
+            },
+            err => {
+              if (!!err) {
+                return cbk([503, 'UnexpectedErrorInitializingWallet', {err}]);
+              }
+
+              return cbk();
+            });
           });
-        });
+        },
+        cbk);
       }],
 
       // Get the macaroon out of the docker image
@@ -183,6 +188,7 @@ module.exports = (args, cbk) => {
       {
         return cbk(null, {
           cert: getCertificate.file.toString('base64'),
+          host: spawnDocker.host,
           kill: spawnDocker.kill,
           macaroon: getMacaroon.file.toString('base64'),
           public_key: waitForRpc.public_key,

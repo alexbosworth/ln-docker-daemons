@@ -1,7 +1,9 @@
 const asyncAuto = require('async/auto');
 const {returnResult} = require('asyncjs-util');
 
+const {addPeer} = require('./../bitcoinrpc');
 const {generateToAddress} = require('./../bitcoinrpc');
+const {getBlockInfo} = require('./../bitcoinrpc');
 const {killDockers} = require('./../docker');
 const {spawnBitcoindDocker} = require('./../bitcoind');
 const spawnLndDocker = require('./spawn_lnd_docker');
@@ -20,9 +22,13 @@ const spawnLndDocker = require('./spawn_lnd_docker');
 
   @returns via cbk or Promise
   {
+    add_chain_peer: <Add Peer Function> ({socket}) => {}
     cert: <LND Base64 Serialized TLS Cert>
+    chain_socket: <Chain P2P Socket String>
     generate: ({address, count}, cbk) => <Generate to Address Promise>
+    get_block_info: <Get Block Info Function> ({id}) => {}
     kill: ({}, [cbk]) => <Kill LND Daemon Promise>
+    ln_socket: <LN P2P Socket String>
     macaroon: <LND Base64 Serialized Macaroon String>
     public_key: <Identity Public Key Hex String>
     socket: <LND RPC Host:Port Network Address String>
@@ -114,7 +120,14 @@ module.exports = (args, cbk) => {
         const dockers = [spawnChainDaemon, spawnLightningDaemon];
 
         return cbk(null, {
+          add_chain_peer: ({socket}) => addPeer({
+            socket,
+            pass: spawnChainDaemon.rpc_pass,
+            port: args.chain_rpc_port,
+            user: spawnChainDaemon.rpc_user,
+          }),
           cert: spawnLightningDaemon.cert,
+          chain_socket: `${spawnChainDaemon.host}`,
           generate: ({address, count}) => generateToAddress({
             address,
             count,
@@ -122,8 +135,15 @@ module.exports = (args, cbk) => {
             port: args.chain_rpc_port,
             user: spawnChainDaemon.rpc_user,
           }),
+          get_block_info: ({id}) => getBlockInfo({
+            id,
+            pass: spawnChainDaemon.rpc_pass,
+            port: args.chain_rpc_port,
+            user: spawnChainDaemon.rpc_user,
+          }),
           kill: ({}, cbk) => killDockers({dockers}, cbk),
           macaroon: spawnLightningDaemon.macaroon,
+          ln_socket: `${spawnLightningDaemon.host}:9735`,
           public_key: spawnLightningDaemon.public_key,
           socket: spawnLightningDaemon.socket,
         });

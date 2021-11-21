@@ -30,6 +30,7 @@ const trim = string => string.replace(/=+$/g, '');
 
   @returns via cbk or Promise
   {
+    host: <Host String>
     kill: ({}, [cbk]) => <Kill Promise>
     rpc_pass: <RPC Password String>
     rpc_user: <RPC Username String>
@@ -75,6 +76,7 @@ module.exports = (args, cbk) => {
         return spawnDockerImage({
           arguments: [
             '--disablewallet',
+            '--listen=1',
             '--persistmempool=false',
             '--printtoconsole',
             '--regtest',
@@ -85,12 +87,6 @@ module.exports = (args, cbk) => {
             '--txindex',
             `--zmqpubrawblock=tcp://*:${args.zmq_block_port}`,
             `--zmqpubrawtx=tcp://*:${args.zmq_tx_port}`,
-          ],
-          expose: [
-            '18443/tcp',
-            '18444/tcp',
-            [`${args.zmq_block_port}/tcp`],
-            [`${args.zmq_tx_port}/tcp`],
           ],
           image: dockerBitcoindImage,
           ports: {

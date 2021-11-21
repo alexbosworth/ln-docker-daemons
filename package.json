@@ -8,11 +8,11 @@
   },
   "dependencies": {
     "@alexbosworth/node-fetch": "2.6.2",
-    "async": "3.2.1",
-    "asyncjs-util": "1.2.6",
+    "async": "3.2.2",
+    "asyncjs-util": "1.2.7",
     "dockerode": "3.3.1",
     "find-free-ports": "3.0.0",
-    "lightning": "4.10.7",
+    "lightning": "4.14.4",
     "tar-stream": "2.2.0"
   },
   "description": "Spawn and control LN Docker daemons",
@@ -20,7 +20,7 @@
     "@alexbosworth/tap": "15.0.10"
   },
   "engines": {
-    "node": ">=10.12.0"
+    "node": ">=12"
   },
   "keywords": [
     "docker"
@@ -35,5 +35,5 @@
   "scripts": {
     "test": "tap --branches=1 --functions=1 --lines=1 --statements=1 -j 1 test/bitcoind/*.js test/lnd/*.js"
   },
-  "version": "1.2.0"
+  "version": "2.0.0"
 }
