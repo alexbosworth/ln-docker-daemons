@@ -1,5 +1,10 @@
 # Versions
 
+## 2.2.0
+
+- `spawnLightningCluster`, `spawnLightningDocker`: Add `lnd_configuration` to
+    allow specifying additional LND configuration parameters
+
 ## 2.1.1
 
 - `DOCKER_LND_VERSION`: add environment variable to control docker lnd image

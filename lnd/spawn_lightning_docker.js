@@ -18,6 +18,7 @@ const spawnLndDocker = require('./spawn_lnd_docker');
     generate_address: <Generate Blocks to Address String>
     lightning_p2p_port: <Lightning Network P2P Listen Port Number>
     lightning_rpc_port: <Lightning Node RPC Port Number>
+    [lnd_configuration]: [<LND Configuration Argument String>]
   }
 
   @returns via cbk or Promise
@@ -99,6 +100,7 @@ module.exports = (args, cbk) => {
         ({spawnChainDaemon}, cbk) =>
       {
         return spawnLndDocker({
+          configuration: args.lnd_configuration,
           bitcoind_rpc_host: spawnChainDaemon.host,
           bitcoind_rpc_pass: spawnChainDaemon.rpc_pass,
           bitcoind_rpc_port: args.chain_rpc_port,

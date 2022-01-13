@@ -23,6 +23,7 @@ const tlsCertPath = '/root/.lnd/tls.cert';
     bitcoind_rpc_user: <Bitcoin Core RPC Username String>
     bitcoind_zmq_block_port: <Bitcoin Core ZMQ Block Port Number>
     bitcoind_zmq_tx_port: <Bitcoin Core ZMQ Transaction Port Number>
+    [configuration]: [<LND Configuration Argument String>]
     p2p_port: <LND Peer to Peer Listen Port Number>
     rpc_port: <LND RPC Port Number>
   }
@@ -78,30 +79,32 @@ module.exports = (args, cbk) => {
         const zmqBlockPort = args.bitcoind_zmq_block_port;
         const zmqTxPort = args.bitcoind_zmq_tx_port;
 
+        const arguments = [
+          '--accept-keysend',
+          '--allow-circular-route',
+          '--autopilot.heuristic=externalscore:0.5',
+          '--autopilot.heuristic=preferential:0.5',
+          '--bitcoin.active',
+          '--bitcoin.minhtlc=1000',
+          '--bitcoin.node=bitcoind',
+          '--bitcoin.regtest',
+          `--bitcoind.rpchost=${chainHost}:18443`,
+          `--bitcoind.rpcpass=${args.bitcoind_rpc_pass}`,
+          `--bitcoind.rpcuser=${args.bitcoind_rpc_user}`,
+          `--bitcoind.zmqpubrawblock=tcp://${chainHost}:${zmqBlockPort}`,
+          `--bitcoind.zmqpubrawtx=tcp://${chainHost}:${zmqTxPort}`,
+          '--debuglevel=trace',
+          `--externalip=127.0.0.1:9735`,
+          '--historicalsyncinterval=1s',
+          `--listen=0.0.0.0:9735`,
+          '--nobootstrap',
+          `--rpclisten=0.0.0.0:10009`,
+          '--trickledelay=1',
+          '--unsafe-disconnect',
+        ];
+
         return spawnDockerImage({
-          arguments: [
-            '--accept-keysend',
-            '--allow-circular-route',
-            '--autopilot.heuristic=externalscore:0.5',
-            '--autopilot.heuristic=preferential:0.5',
-            '--bitcoin.active',
-            '--bitcoin.minhtlc=1000',
-            '--bitcoin.node=bitcoind',
-            '--bitcoin.regtest',
-            `--bitcoind.rpchost=${chainHost}:18443`,
-            `--bitcoind.rpcpass=${args.bitcoind_rpc_pass}`,
-            `--bitcoind.rpcuser=${args.bitcoind_rpc_user}`,
-            `--bitcoind.zmqpubrawblock=tcp://${chainHost}:${zmqBlockPort}`,
-            `--bitcoind.zmqpubrawtx=tcp://${chainHost}:${zmqTxPort}`,
-            '--debuglevel=trace',
-            `--externalip=127.0.0.1:9735`,
-            '--historicalsyncinterval=1s',
-            `--listen=0.0.0.0:9735`,
-            '--nobootstrap',
-            `--rpclisten=0.0.0.0:10009`,
-            '--trickledelay=1',
-            '--unsafe-disconnect',
-          ],
+          arguments: arguments.concat(args.configuration || []),
           image: imageName(process.env.DOCKER_LND_VERSION),
           ports: {
             '9735/tcp': args.p2p_port,

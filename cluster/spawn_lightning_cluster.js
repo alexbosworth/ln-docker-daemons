@@ -27,6 +27,7 @@ const times = 3000;
 /** Spawn a cluster of nodes
 
   {
+    [lnd_configuration]: [<LND Configuration Argument String>]
     [size]: <Total Lightning Nodes Number>
   }
 
@@ -75,6 +76,7 @@ module.exports = (args, cbk) => {
               generate_address: generateAddress,
               lightning_p2p_port: lightningP2pPort,
               lightning_rpc_port: lightningRpcPort,
+              lnd_configuration: args.lnd_configuration,
             });
 
             const {lnd} = authenticatedLndGrpc({
