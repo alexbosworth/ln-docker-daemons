@@ -1,6 +1,6 @@
 # Versions
 
-## 2.1.0
+## 2.1.1
 
 - `DOCKER_LND_VERSION`: add environment variable to control docker lnd image
 
