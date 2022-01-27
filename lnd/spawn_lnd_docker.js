@@ -139,40 +139,28 @@ module.exports = (args, cbk) => {
               cipher_seed_mnemonic: res.cipher_seed_mnemonic,
               wallet_password: Buffer.from('password', 'utf8'),
             },
-            err => {
+            (err, res) => {
               if (!!err) {
                 return cbk([503, 'UnexpectedErrorInitializingWallet', {err}]);
               }
 
-              return cbk();
+              return cbk(null, res.admin_macaroon);
             });
           });
         },
         cbk);
       }],
 
-      // Get the macaroon out of the docker image
-      getMacaroon: [
-        'createWallet',
-        'spawnDocker',
-        ({createWallet, spawnDocker}, cbk) =>
-      {
-        return asyncRetry({interval, times}, cbk => {
-          return spawnDocker.getFile({path: macaroonPath}, cbk);
-        },
-        cbk);
-      }],
-
       // Wait for gRPC to respond
       waitForRpc: [
+        'createWallet',
         'getCertificate',
-        'getMacaroon',
         'spawnDocker',
-        ({getCertificate, getMacaroon, spawnDocker}, cbk) =>
+        ({createWallet, getCertificate, spawnDocker}, cbk) =>
       {
         const {lnd} = authenticatedLndGrpc({
           cert: getCertificate.file.toString('hex'),
-          macaroon: getMacaroon.file.toString('hex'),
+          macaroon: createWallet.toString('hex'),
           socket: `localhost:${args.rpc_port}`,
         });
 
@@ -184,17 +172,17 @@ module.exports = (args, cbk) => {
 
       // LND fully spawned
       spawned: [
+        'createWallet',
         'getCertificate',
-        'getMacaroon',
         'spawnDocker',
         'waitForRpc',
-        ({getCertificate, getMacaroon, spawnDocker, waitForRpc}, cbk) =>
+        ({createWallet, getCertificate, spawnDocker, waitForRpc}, cbk) =>
       {
         return cbk(null, {
           cert: getCertificate.file.toString('base64'),
           host: spawnDocker.host,
           kill: spawnDocker.kill,
-          macaroon: getMacaroon.file.toString('base64'),
+          macaroon: createWallet.toString('hex'),
           public_key: waitForRpc.public_key,
           socket: `localhost:${args.rpc_port}`,
         });
