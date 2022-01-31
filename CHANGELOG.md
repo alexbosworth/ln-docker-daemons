@@ -1,5 +1,9 @@
 # Versions
 
+## 2.2.2
+
+- Change default LND version to v0.14.1-beta
+
 ## 2.2.1
 
 - `spawnLightningCluster`, `spawnLightningDocker`: Add `lnd_configuration` to
