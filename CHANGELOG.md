@@ -1,5 +1,9 @@
 # Versions
 
+## 2.2.4
+
+- Change default LND version to v0.14.2-beta
+
 ## 2.2.3
 
 - Change Bitcoin Core version to 22.0

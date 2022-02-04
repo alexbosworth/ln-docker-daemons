@@ -28,6 +28,9 @@ Example:
 export DOCKER_LND_VERSION="v0.14.0-beta"
 ```
 
+A list of available tags can be found here:
+https://hub.docker.com/r/lightninglabs/lnd/tags
+
 ## spawnBitcoindDocker
 
 Spawn a Bitcoin Core Docker image
