@@ -67,8 +67,6 @@ module.exports = ({arguments, expose, image, ports}, cbk) => {
             throw [503, 'CannotConnectToDockerDaemon'];
           }
 
-          console.log("ERR", err);
-
           throw [503, 'UnexpectedErrorGettingDockerImage', {err}];
         }
       }],
