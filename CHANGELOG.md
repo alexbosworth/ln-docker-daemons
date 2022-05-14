@@ -1,6 +1,6 @@
 # Versions
 
-## 2.2.10
+## 2.2.11
 
 - Change default LND version to v0.14.3-beta
 
