@@ -1,5 +1,9 @@
 # Versions
 
+## 2.3.0
+
+- `setupChannel`: Add method to setup a channel between LND nodes
+
 ## 2.2.12
 
 - Change default LND version to v0.14.3-beta
