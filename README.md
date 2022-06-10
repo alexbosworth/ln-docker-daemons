@@ -18,6 +18,19 @@ const publicKey = (await getIdentity({lnd})).public_key;
 await kill({});
 ```
 
+Supported methods:
+
+- setupChannel: Create a channel between lnds
+- spawnBitcoindDocker: Run a Bitcoin Core container
+- spawnLightningCluster: Spin up a group of nodes
+- spawnLightningDocker: Run lnd + bitcoind
+
+One liner for killing all running Docker containers:
+
+```
+docker container kill $(docker ps -q)
+```
+
 ## Environment Variables
 
 - `DOCKER_LND_VERSION`: set this to use a custom LND docker image
@@ -31,7 +44,48 @@ export DOCKER_LND_VERSION="v0.14.0-beta"
 A list of available tags can be found here:
 https://hub.docker.com/r/lightninglabs/lnd/tags
 
-## spawnBitcoindDocker
+## `setupChannel`
+
+Setup channel
+
+    {
+      [capacity]: <Channel Capacity Tokens Number>
+      generate: <Generate Blocks Promise>
+      [give_tokens]: <Gift Tokens Number>
+      lnd: <Authenticated LND API Object>
+      [partner_csv_delay]: <Partner CSV Delay Number>
+      to: {
+        id: <Partner Public Key Hex String>
+        socket: <Network Address String>
+      }
+    }
+
+    @returns via cbk or Promise
+    {
+      id: <Standard Format Channel Id String>
+      transaction_id: <Funding Transaction Id Hex String>
+      transaction_vout: <Funding Transaction Output Index Number>
+    }
+
+Example:
+
+```node
+const {getNetworkInfo} = require('ln-service');
+const {spawnLightningCluster} = require('ln-docker-daemons');
+
+const {kill, nodes} = await spawnLightningCluster({size: 2});
+
+const [alice, bob] = nodes;
+
+await setupChannel({generate: alice.generate, lnd: alice.lnd, to: bob});
+
+const networkInfo = await getNetworkInfo({lnd: alice.lnd});
+// networkInfo.channel_count now equals 1
+
+await kill({});
+```
+
+## `spawnBitcoindDocker`
 
 Spawn a Bitcoin Core Docker image
 
@@ -106,7 +160,7 @@ await generate({count: 500});
 await kill({});
 ```
 
-## spawnLightningDocker
+## `spawnLightningDocker`
 
 Spawn an LND Docker
 

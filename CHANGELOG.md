@@ -1,6 +1,6 @@
 # Versions
 
-## 2.3.0
+## 2.3.1
 
 - `setupChannel`: Add method to setup a channel between LND nodes
 
