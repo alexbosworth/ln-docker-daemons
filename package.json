@@ -10,9 +10,9 @@
     "@alexbosworth/node-fetch": "2.6.2",
     "async": "3.2.4",
     "asyncjs-util": "1.2.10",
-    "dockerode": "3.3.2",
+    "dockerode": "3.3.4",
     "find-free-ports": "3.0.0",
-    "lightning": "5.16.3",
+    "lightning": "5.17.0",
     "tar-stream": "2.2.0"
   },
   "description": "Spawn and control LN Docker daemons",
@@ -35,5 +35,5 @@
   "scripts": {
     "test": "tap --branches=1 --functions=1 --lines=1 --statements=1 -j 1 test/bitcoind/*.js test/lnd/*.js"
   },
-  "version": "2.3.2"
+  "version": "2.3.3"
 }
