@@ -1,5 +1,9 @@
 # Versions
 
+## 2.3.6
+
+- Change default LND version to v0.15.1-beta
+
 ## 2.3.5
 
 - Change default LND version to v0.15.0-beta
