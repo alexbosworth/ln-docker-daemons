@@ -1,5 +1,13 @@
 # Versions
 
+## 3.0.0
+
+- `spawnLightningCluster`: Add `rpc` for custom macaroon rpc connections
+
+### Breaking Changes
+
+- Versions of node.js before 14 are no longer supported
+
 ## 2.3.6
 
 - Change default LND version to v0.15.1-beta

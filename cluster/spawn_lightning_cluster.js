@@ -34,10 +34,11 @@ const times = 3000;
   @returns via cbk or Promise
   {
     nodes: [{
-      generate: ({address, count}, [cbk]) => {}
+      generate: <Make Block Function> ({address, count}, [cbk]) => {}
       id: <Node Public Key Hex String>
       kill: <Kill Function> ({}, cbk) => {}
       lnd: <Authenticated LND API Object>
+      rpc: <RPC Connection Function> ({macaroon}) => {}
       socket: <Node Socket String>
     }]
   }
@@ -122,6 +123,15 @@ module.exports = (args, cbk) => {
               },
               kill: lightningDocker.kill,
               public_key: id,
+              rpc: ({macaroon}) => {
+                const {lnd} = authenticatedLndGrpc({
+                  macaroon,
+                  cert: lightningDocker.cert,
+                  socket: lightningDocker.socket,
+                });
+
+                return {lnd};
+              },
               socket: lightningDocker.ln_socket,
             };
           });
@@ -146,6 +156,7 @@ module.exports = (args, cbk) => {
             id: node.id,
             kill: node.kill,
             lnd: node.lnd,
+            rpc: node.rpc,
             socket: node.socket,
           })),
         };

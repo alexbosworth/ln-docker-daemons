@@ -133,10 +133,11 @@ Spawn a cluster of nodes
     @returns via cbk or Promise
     {
       nodes: [{
-        generate: ({address, [count]}) => {}
+        generate: <Make Block Function> ({address, count}, [cbk]) => {}
         id: <Node Public Key Hex String>
         kill: <Kill Function> ({}, cbk) => {}
         lnd: <Authenticated LND API Object>
+        rpc: <RPC Connection Function> ({macaroon}) => {}
         socket: <Node Socket String>
       }]
     }
