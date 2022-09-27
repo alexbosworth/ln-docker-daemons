@@ -1,6 +1,6 @@
 # Versions
 
-## 3.0.0
+## 3.0.1
 
 - `spawnLightningCluster`: Add `rpc` for custom macaroon rpc connections
 
