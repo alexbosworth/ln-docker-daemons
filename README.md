@@ -174,6 +174,7 @@ Spawn an LND Docker
       lightning_p2p_port: <Lightning Network P2P Listen Port Number>
       lightning_rpc_port: <Lightning Node RPC Port Number>
       [lnd_configuration]: [<LND Configuration Argument String>]
+      [seed]: <Mnemonic Seed String>
     }
 
     @returns via cbk or Promise

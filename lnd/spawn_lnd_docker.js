@@ -26,6 +26,7 @@ const tlsCertPath = '/root/.lnd/tls.cert';
     [configuration]: [<LND Configuration Argument String>]
     p2p_port: <LND Peer to Peer Listen Port Number>
     rpc_port: <LND RPC Port Number>
+    [seed]: <Mnemonic Seed String>
   }
 
   @returns via cbk or Promise
@@ -135,8 +136,10 @@ module.exports = (args, cbk) => {
               return cbk([503, 'UnexpectedErrorGeneratingSeed', {err}]);
             }
 
+            const seed = res.cipher_seed_mnemonic.join(' ');
+
             lnd.unlocker.initWallet({
-              cipher_seed_mnemonic: res.cipher_seed_mnemonic,
+              cipher_seed_mnemonic: (args.seed || seed).split(' '),
               wallet_password: Buffer.from('password', 'utf8'),
             },
             (err, res) => {

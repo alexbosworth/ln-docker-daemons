@@ -1,5 +1,9 @@
 # Versions
 
+## 3.1.0
+
+- `spawnLightningDocker`: Add argument `seed` to use a predetermined seed
+
 ## 3.0.1
 
 - `spawnLightningCluster`: Add `rpc` for custom macaroon rpc connections
