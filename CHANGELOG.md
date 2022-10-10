@@ -1,5 +1,9 @@
 # Versions
 
+## 3.1.1
+
+- Change default LND version to v0.15.2-beta
+
 ## 3.1.0
 
 - `spawnLightningDocker`: Add argument `seed` to use a predetermined seed
