@@ -20,7 +20,7 @@ const interval = 10;
 const makeAddress = ({lnd}) => createChainAddress({lnd});
 const maturity = 100;
 const pairs = n => n.map((x, i) => n.slice(i + 1).map(y => [x, y])).flat();
-const portsPerLnd = 6;
+const portsPerLnd = 7;
 const startPort = 1025;
 const times = 3000;
 
@@ -40,6 +40,7 @@ const times = 3000;
       lnd: <Authenticated LND API Object>
       rpc: <RPC Connection Function> ({macaroon}) => {}
       socket: <Node Socket String>
+      tower: <LND Tower Socket Host:Port Network Address String>
     }]
   }
 */
@@ -67,6 +68,7 @@ module.exports = (args, cbk) => {
               chainZmqTxPort,
               lightningP2pPort,
               lightningRpcPort,
+              lightningTowerPort,
             ] = ports;
 
             const lightningDocker = await spawnLightningDocker({
@@ -77,6 +79,7 @@ module.exports = (args, cbk) => {
               generate_address: generateAddress,
               lightning_p2p_port: lightningP2pPort,
               lightning_rpc_port: lightningRpcPort,
+              lightning_tower_port: lightningTowerPort,
               lnd_configuration: args.lnd_configuration,
             });
 
@@ -133,6 +136,7 @@ module.exports = (args, cbk) => {
                 return {lnd};
               },
               socket: lightningDocker.ln_socket,
+              tower: lightningDocker.tower_socket,
             };
           });
         });
@@ -158,6 +162,7 @@ module.exports = (args, cbk) => {
             lnd: node.lnd,
             rpc: node.rpc,
             socket: node.socket,
+            tower: node.tower,
           })),
         };
       }],

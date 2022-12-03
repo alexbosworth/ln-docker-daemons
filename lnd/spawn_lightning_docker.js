@@ -18,6 +18,7 @@ const spawnLndDocker = require('./spawn_lnd_docker');
     generate_address: <Generate Blocks to Address String>
     lightning_p2p_port: <Lightning Network P2P Listen Port Number>
     lightning_rpc_port: <Lightning Node RPC Port Number>
+    lightning_tower_port: <Lightning Tower Port Number>
     [lnd_configuration]: [<LND Configuration Argument String>]
     [seed]: <Mnemonic Seed String>
   }
@@ -34,6 +35,7 @@ const spawnLndDocker = require('./spawn_lnd_docker');
     macaroon: <LND Base64 Serialized Macaroon String>
     public_key: <Identity Public Key Hex String>
     socket: <LND RPC Host:Port Network Address String>
+    tower_socket: <LND Tower Socket Host:Port Network Address String>
   }
 */
 module.exports = (args, cbk) => {
@@ -67,6 +69,10 @@ module.exports = (args, cbk) => {
 
         if (!args.lightning_rpc_port) {
           return cbk([400, 'ExpectedLnRpcPortToSpawnLightningDocker']);
+        }
+
+        if (!args.lightning_tower_port) {
+          return cbk([400, 'ExpectedLnTowerPortToSpawnLightningDocker']);
         }
 
         return cbk();
@@ -110,6 +116,7 @@ module.exports = (args, cbk) => {
           bitcoind_zmq_tx_port: args.chain_zmq_tx_port,
           p2p_port: args.lightning_p2p_port,
           rpc_port: args.lightning_rpc_port,
+          tower_port: args.lightning_tower_port,
           seed: args.seed,
         },
         cbk);
@@ -150,6 +157,7 @@ module.exports = (args, cbk) => {
           ln_socket: `${spawnLightningDaemon.host}:9735`,
           public_key: spawnLightningDaemon.public_key,
           socket: spawnLightningDaemon.socket,
+          tower_socket: spawnLightningDaemon.tower_socket,
         });
       }],
     },

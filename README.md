@@ -139,6 +139,7 @@ Spawn a cluster of nodes
         lnd: <Authenticated LND API Object>
         rpc: <RPC Connection Function> ({macaroon}) => {}
         socket: <Node Socket String>
+        tower: <LND Tower Socket Host:Port Network Address String>
       }]
     }
 
@@ -173,6 +174,7 @@ Spawn an LND Docker
       generate_address: <Generate Blocks to Address String>
       lightning_p2p_port: <Lightning Network P2P Listen Port Number>
       lightning_rpc_port: <Lightning Node RPC Port Number>
+      lightning_tower_port: <Lightning Tower Port Number>
       [lnd_configuration]: [<LND Configuration Argument String>]
       [seed]: <Mnemonic Seed String>
     }
@@ -187,4 +189,5 @@ Spawn an LND Docker
       macaroon: <LND Base64 Serialized Macaroon String>
       public_key: <Identity Public Key Hex String>
       socket: <LND RPC Host:Port Network Address String>
+      tower_socket: <LND Tower Socket Host:Port Network Address String>
     }

@@ -1,5 +1,15 @@
 # Versions
 
+## 4.0.0
+
+- `spawnLightningCluster`: Return `tower` for the watchtower server socket
+- `spawnLightningDocker`: Add `tower_port` to specify watchtower server port
+- `spawnLightningDocker`: Return `tower_socket` for the watchtower socket
+
+### Breaking Changes
+
+- `spawnLightningDocker`: `tower_port` is now a required argument
+
 ## 3.1.6
 
 - Change default LND version to v0.15.5-beta

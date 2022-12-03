@@ -26,6 +26,7 @@ const tlsCertPath = '/root/.lnd/tls.cert';
     [configuration]: [<LND Configuration Argument String>]
     p2p_port: <LND Peer to Peer Listen Port Number>
     rpc_port: <LND RPC Port Number>
+    tower_port: <LND Tower Port Number>
     [seed]: <Mnemonic Seed String>
   }
 
@@ -36,6 +37,7 @@ const tlsCertPath = '/root/.lnd/tls.cert';
     macaroon: <LND Base64 Serialized Macaroon String>
     public_key: <LND Public Key Hex String>
     socket: <LND RPC Host:Port Network Address String>
+    tower_socket: <LND Tower Socket Host:Port Network Address String>
   }
 */
 module.exports = (args, cbk) => {
@@ -71,6 +73,10 @@ module.exports = (args, cbk) => {
           return cbk([400, 'ExpectedRpcPortToSpawnLndDocker']);
         }
 
+        if (!args.tower_port) {
+          return cbk([400, 'ExpectedTowerPortToSpawnLndDocker']);
+        }
+
         return cbk();
       },
 
@@ -102,6 +108,8 @@ module.exports = (args, cbk) => {
           `--rpclisten=0.0.0.0:10009`,
           '--trickledelay=1',
           '--unsafe-disconnect',
+          '--watchtower.externalip', `127.0.0.1:9911`,
+          '--watchtower.listen', `127.0.0.1:9911`,
         ];
 
         return spawnDockerImage({
@@ -109,6 +117,7 @@ module.exports = (args, cbk) => {
           image: imageName(process.env.DOCKER_LND_VERSION),
           ports: {
             '9735/tcp': args.p2p_port,
+            '9911/tcp': args.tower_port,
             '10009/tcp': args.rpc_port,
           },
         },
@@ -188,6 +197,7 @@ module.exports = (args, cbk) => {
           macaroon: createWallet.toString('hex'),
           public_key: waitForRpc.public_key,
           socket: `localhost:${args.rpc_port}`,
+          tower_socket: `localhost:${args.tower_port}`,
         });
       }],
     },
