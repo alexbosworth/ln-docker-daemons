@@ -106,6 +106,8 @@ module.exports = (args, cbk) => {
           `--listen=0.0.0.0:9735`,
           '--nobootstrap',
           `--rpclisten=0.0.0.0:10009`,
+          `--rpcmiddleware.enable`,
+          `--rpcmiddleware.intercepttimeout=4s`,
           '--trickledelay=1',
           '--unsafe-disconnect',
           '--watchtower.externalip', `127.0.0.1:9911`,
