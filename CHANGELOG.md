@@ -1,6 +1,6 @@
 # Versions
 
-## 4.0.1
+## 4.0.2
 
 - `spawnLightningCluster`: Return `tower` for the watchtower server socket
 - `spawnLightningDocker`: Add `tower_port` to specify watchtower server port
