@@ -191,3 +191,31 @@ Spawn an LND Docker
       socket: <LND RPC Host:Port Network Address String>
       tower_socket: <LND Tower Socket Host:Port Network Address String>
     }
+
+## `spawnLndDocker`
+
+Spawn a new Docker image running LND
+
+    {
+      bitcoind_rpc_host: <Bitcoin Core RPC Host String>
+      bitcoind_rpc_pass: <Bitcoin Core RPC Password String>
+      bitcoind_rpc_port: <Bitcoin Core RPC Port Number>
+      bitcoind_rpc_user: <Bitcoin Core RPC Username String>
+      [bitcoind_zmq_block_port]: <Bitcoin Core ZMQ Block Port Number>
+      [bitcoind_zmq_tx_port]: <Bitcoin Core ZMQ Transaction Port Number>
+      [configuration]: [<LND Configuration Argument String>]
+      p2p_port: <LND Peer to Peer Listen Port Number>
+      rpc_port: <LND RPC Port Number>
+      tower_port: <LND Tower Port Number>
+      [seed]: <Mnemonic Seed String>
+    }
+
+    @returns via cbk or Promise
+    {
+      cert: <LND Base64 Serialized TLS Cert Base64 String>
+      kill: ({}, [cbk]) => <Kill LND Docker Promise>
+      macaroon: <LND Base64 Serialized Macaroon String>
+      public_key: <LND Public Key Hex String>
+      socket: <LND RPC Host:Port Network Address String>
+      tower_socket: <LND Tower Socket Host:Port Network Address String>
+    }

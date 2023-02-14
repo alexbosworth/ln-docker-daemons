@@ -24,8 +24,8 @@ const trim = string => string.replace(/=+$/g, '');
   {
     p2p_port: <P2P Port Number>
     rpc_port: <RPC Port Number>
-    zmq_block_port: <ZMQ Blocks Port Number>
-    zmq_tx_port: <ZMQ Transactions Port Number>
+    [zmq_block_port]: <ZMQ Blocks Port Number>
+    [zmq_tx_port]: <ZMQ Transactions Port Number>
   }
 
   @returns via cbk or Promise
@@ -49,14 +49,6 @@ module.exports = (args, cbk) => {
           return cbk([400, 'ExpectedRpcListenPortToSpawnBitcoindDocker']);
         }
 
-        if (!args.zmq_block_port) {
-          return cbk([400, 'ExpectedZmqBlocksPortToSpawnBitcoindDocker']);
-        }
-
-        if (!args.zmq_tx_port) {
-          return cbk([400, 'ExpectedZmqTxPortToSpawnBitcoindDocker']);
-        }
-
         return cbk();
       },
 
@@ -73,30 +65,33 @@ module.exports = (args, cbk) => {
 
       // Spawn the docker image
       spawnDocker: ['generateAuth', ({generateAuth}, cbk) => {
-        return spawnDockerImage({
-          arguments: [
-            '--disablewallet',
-            '--listen=1',
-            '--persistmempool=false',
-            '--printtoconsole',
-            '--regtest',
-            '--rpcallowip=172.17.0.0/16',
-            `--rpcauth=${generateAuth.rpc_auth}`,
-            '--rpcbind=0.0.0.0',
-            '--server',
-            '--txindex',
-            `--zmqpubrawblock=tcp://*:${args.zmq_block_port}`,
-            `--zmqpubrawtx=tcp://*:${args.zmq_tx_port}`,
-          ],
-          image: dockerBitcoindImage,
-          ports: {
-            '18443/tcp': args.rpc_port,
-            '18444/tcp': args.p2p_port,
-            [`${args.zmq_block_port}/tcp`]: args.zmq_block_port,
-            [`${args.zmq_tx_port}/tcp`]: args.zmq_tx_port,
-          },
-        },
-        cbk);
+        const arguments = [
+          '--disablewallet',
+          '--listen=1',
+          '--persistmempool=false',
+          '--printtoconsole',
+          '--regtest',
+          '--rpcallowip=172.17.0.0/16',
+          `--rpcauth=${generateAuth.rpc_auth}`,
+          '--rpcbind=0.0.0.0',
+          '--server',
+          '--txindex',
+        ];
+
+        const image = dockerBitcoindImage;
+        const ports = {'18443/tcp': args.rpc_port, '18444/tcp': args.p2p_port};
+
+        if (!!args.zmq_block_port) {
+          arguments.push('--zmqpubrawblock=tcp://*:' + args.zmq_block_port);
+          ports[`${args.zmq_block_port}/tcp`] = args.zmq_block_port;
+        }
+
+        if (!!args.zmq_tx_port) {
+          arguments.push('--zmqpubrawtx=tcp://*:' + args.zmq_tx_port);
+          ports[`${args.zmq_tx_port}/tcp`] = args.zmq_tx_port;
+        }
+
+        return spawnDockerImage({arguments, image, ports}, cbk);
       }],
 
       // Wait for the image to respond to a query

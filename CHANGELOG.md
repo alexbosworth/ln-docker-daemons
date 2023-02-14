@@ -1,5 +1,9 @@
 # Versions
 
+## 4.1.0
+
+- `spawnLndDocker`: Add method to spawn an LND docker
+
 ## 4.0.4
 
 - `spawnLightningCluster`: Return `tower` for the watchtower server socket

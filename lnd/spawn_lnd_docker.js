@@ -10,6 +10,7 @@ const {spawnDockerImage} = require('./../docker');
 
 const imageName = ver => !!ver ? `lightninglabs/lnd:${ver}` : dockerLndImage;
 const interval = 100;
+const join = n => n.join('');
 const macaroonPath = '/root/.lnd/data/chain/bitcoin/regtest/admin.macaroon';
 const times = 500;
 const tlsCertPath = '/root/.lnd/tls.cert';
@@ -21,8 +22,8 @@ const tlsCertPath = '/root/.lnd/tls.cert';
     bitcoind_rpc_pass: <Bitcoin Core RPC Password String>
     bitcoind_rpc_port: <Bitcoin Core RPC Port Number>
     bitcoind_rpc_user: <Bitcoin Core RPC Username String>
-    bitcoind_zmq_block_port: <Bitcoin Core ZMQ Block Port Number>
-    bitcoind_zmq_tx_port: <Bitcoin Core ZMQ Transaction Port Number>
+    [bitcoind_zmq_block_port]: <Bitcoin Core ZMQ Block Port Number>
+    [bitcoind_zmq_tx_port]: <Bitcoin Core ZMQ Transaction Port Number>
     [configuration]: [<LND Configuration Argument String>]
     p2p_port: <LND Peer to Peer Listen Port Number>
     rpc_port: <LND RPC Port Number>
@@ -32,8 +33,8 @@ const tlsCertPath = '/root/.lnd/tls.cert';
 
   @returns via cbk or Promise
   {
-    cert: <LND Base64 Serialized TLS Cert>
-    kill: ({}, [cbk]) => <Kill LND and Bitcoind Dockers Promise>
+    cert: <LND Base64 Serialized TLS Cert Base64 String>
+    kill: ({}, [cbk]) => <Kill LND Dockers Promise>
     macaroon: <LND Base64 Serialized Macaroon String>
     public_key: <LND Public Key Hex String>
     socket: <LND RPC Host:Port Network Address String>
@@ -55,14 +56,6 @@ module.exports = (args, cbk) => {
 
         if (!args.bitcoind_rpc_user) {
           return cbk([400, 'ExpectedBitcoinCoreRpcUserToSpawnLndDocker']);
-        }
-
-        if (!args.bitcoind_zmq_block_port) {
-          return cbk([400, 'ExpectedBitcoinCoreZmqBlockPortToSpawnLndDocker']);
-        }
-
-        if (!args.bitcoind_zmq_tx_port) {
-          return cbk([400, 'ExpectedBitcoinCoreZmqTxPortToSpawnLndDocker']);
         }
 
         if (!args.p2p_port) {
@@ -111,6 +104,26 @@ module.exports = (args, cbk) => {
           '--watchtower.externalip', `127.0.0.1:9911`,
           '--watchtower.listen', `127.0.0.1:9911`,
         ];
+
+        if (!!zmqBlockPort) {
+          arguments.push(join([
+            '--bitcoind.zmqpubrawblock=tcp://',
+            chainHost,
+            ':',
+            zmqBlockPort,
+          ]));
+
+          arguments.push(join([
+            '--bitcoind.zmqpubrawtx=tcp://',
+            chainHost,
+            ':',
+            zmqTxPort
+          ]));
+        } else {
+          arguments.push('--bitcoind.rpcpolling');
+          arguments.push('--bitcoind.blockpollinginterval=1s');
+          arguments.push('--bitcoind.txpollinginterval=1s');
+        }
 
         return spawnDockerImage({
           arguments: arguments.concat(args.configuration || []),
