@@ -1,6 +1,6 @@
 # Versions
 
-## 4.1.1
+## 4.1.2
 
 - `spawnLndDocker`: Add method to spawn an LND docker
 
