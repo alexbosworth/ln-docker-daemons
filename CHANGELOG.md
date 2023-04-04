@@ -1,5 +1,9 @@
 # Versions
 
+## 4.1.3
+
+- Change default LND version to v0.16.0-beta
+
 ## 4.1.2
 
 - `spawnLndDocker`: Add method to spawn an LND docker
