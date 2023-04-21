@@ -1,5 +1,11 @@
 # Versions
 
+## 5.0.0
+
+### Breaking Changes
+
+- node.js 14 is no longer supported, minimum node.js version is 16
+
 ## 4.1.4
 
 - Change default LND version to v0.16.0-beta

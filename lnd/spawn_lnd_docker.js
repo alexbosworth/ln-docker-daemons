@@ -88,6 +88,7 @@ module.exports = (args, cbk) => {
           '--bitcoin.minhtlc=1000',
           '--bitcoin.node=bitcoind',
           '--bitcoin.regtest',
+          '--bitcoin.timelockdelta=40',
           `--bitcoind.rpchost=${chainHost}:18443`,
           `--bitcoind.rpcpass=${args.bitcoind_rpc_pass}`,
           `--bitcoind.rpcuser=${args.bitcoind_rpc_user}`,
