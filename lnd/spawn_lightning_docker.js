@@ -8,6 +8,8 @@ const {killDockers} = require('./../docker');
 const {spawnBitcoindDocker} = require('./../bitcoind');
 const spawnLndDocker = require('./spawn_lnd_docker');
 
+const defaultBitcoindRpcPort = 18443;
+
 /** Spawn an LND Docker
 
   {
@@ -110,7 +112,7 @@ module.exports = (args, cbk) => {
           configuration: args.lnd_configuration,
           bitcoind_rpc_host: spawnChainDaemon.host,
           bitcoind_rpc_pass: spawnChainDaemon.rpc_pass,
-          bitcoind_rpc_port: args.chain_rpc_port,
+          bitcoind_rpc_port: defaultBitcoindRpcPort,
           bitcoind_rpc_user: spawnChainDaemon.rpc_user,
           bitcoind_zmq_block_port: args.chain_zmq_block_port,
           bitcoind_zmq_tx_port: args.chain_zmq_tx_port,
