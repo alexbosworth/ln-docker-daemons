@@ -12,8 +12,8 @@
     "asyncjs-util": "1.2.11",
     "dockerode": "3.3.5",
     "find-free-ports": "3.1.1",
-    "lightning": "9.5.0",
-    "tar-stream": "3.0.0"
+    "lightning": "9.7.0",
+    "tar-stream": "3.1.4"
   },
   "description": "Spawn and control LN Docker daemons",
   "devDependencies": {
@@ -35,5 +35,5 @@
   "scripts": {
     "test": "tap --branches=1 --functions=1 --lines=1 --statements=1 -j 1 test/bitcoind/*.js test/lnd/*.js"
   },
-  "version": "5.0.5"
+  "version": "5.0.6"
 }
