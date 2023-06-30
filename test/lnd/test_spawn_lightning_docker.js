@@ -1,9 +1,9 @@
-const {test} = require('@alexbosworth/tap');
+const test = require('node:test');
 
 const {spawnLightningDocker} = require('./../../');
 
 // Spawning a Lightning node docker image should launch
-test('Spawn Lightning node image', async ({end}) => {
+test('Spawn Lightning node image', async () => {
   const {kill} = await spawnLightningDocker({
     chain_p2p_port: 18458,
     chain_rpc_port: 18459,
@@ -17,5 +17,5 @@ test('Spawn Lightning node image', async ({end}) => {
 
   await kill({});
 
-  return end();
+  return;
 });

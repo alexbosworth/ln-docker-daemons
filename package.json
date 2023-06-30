@@ -9,21 +9,19 @@
   "dependencies": {
     "@alexbosworth/node-fetch": "2.6.2",
     "async": "3.2.4",
-    "asyncjs-util": "1.2.11",
+    "asyncjs-util": "1.2.12",
     "dockerode": "3.3.5",
     "find-free-ports": "3.1.1",
-    "lightning": "9.7.0",
+    "lightning": "9.8.0",
     "tar-stream": "3.1.4"
   },
   "description": "Spawn and control LN Docker daemons",
-  "devDependencies": {
-    "@alexbosworth/tap": "15.0.12"
-  },
   "engines": {
     "node": ">=16"
   },
   "keywords": [
-    "docker"
+    "docker",
+    "lnd"
   ],
   "license": "MIT",
   "main": "index.js",
@@ -33,7 +31,7 @@
     "url": "https://github.com/alexbosworth/ln-docker-daemons.git"
   },
   "scripts": {
-    "test": "tap --branches=1 --functions=1 --lines=1 --statements=1 -j 1 test/bitcoind/*.js test/lnd/*.js"
+    "test": "npx nyc@15.1 node --experimental-test-coverage --test"
   },
-  "version": "5.0.6"
+  "version": "5.0.7"
 }
