@@ -1,5 +1,9 @@
 # Versions
 
+## 5.1.0
+
+- `setupChannel`: add `is_private` to setup a private channel
+
 ## 5.0.7
 
 - Change default LND version to v0.16.3-beta

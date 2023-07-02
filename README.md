@@ -52,6 +52,7 @@ Setup channel
       [capacity]: <Channel Capacity Tokens Number>
       generate: <Generate Blocks Promise>
       [give_tokens]: <Gift Tokens Number>
+      [is_private]: <Is Private Bool>
       lnd: <Authenticated LND API Object>
       [partner_csv_delay]: <Partner CSV Delay Number>
       to: {

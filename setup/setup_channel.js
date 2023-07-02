@@ -21,6 +21,7 @@ const times = 1500;
     [capacity]: <Channel Capacity Tokens Number>
     generate: <Generate Blocks Promise>
     [give_tokens]: <Gift Tokens Number>
+    [is_private]: <Is Private Bool>
     lnd: <Authenticated LND API Object>
     [partner_csv_delay]: <Partner CSV Delay Number>
     to: {
@@ -58,6 +59,7 @@ module.exports = (args, cbk) => {
           return openChannel({
             chain_fee_tokens_per_vbyte: defaultFee,
             give_tokens: args.give_tokens,
+            is_private: args.is_private,
             lnd: args.lnd,
             local_tokens: args.capacity || channelCapacityTokens,
             partner_csv_delay: args.partner_csv_delay,

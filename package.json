@@ -13,7 +13,7 @@
     "dockerode": "3.3.5",
     "find-free-ports": "3.1.1",
     "lightning": "9.8.0",
-    "tar-stream": "3.1.4"
+    "tar-stream": "3.1.5"
   },
   "description": "Spawn and control LN Docker daemons",
   "engines": {
@@ -33,5 +33,5 @@
   "scripts": {
     "test": "npx nyc@15.1 node --experimental-test-coverage --test"
   },
-  "version": "5.0.7"
+  "version": "5.1.0"
 }
