@@ -1,5 +1,9 @@
 # Versions
 
+## 6.0.2
+
+- Change default BItcoin Core version to 23.0
+
 ## 6.0.1
 
 - Change default LND version to v0.17.0-beta

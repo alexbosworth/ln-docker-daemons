@@ -71,7 +71,7 @@ module.exports = (args, cbk) => {
           '--persistmempool=false',
           '--printtoconsole',
           '--regtest',
-          '--rpcallowip=172.17.0.0/16',
+          '--rpcallowip=0.0.0.0/0',
           `--rpcauth=${generateAuth.rpc_auth}`,
           '--rpcbind=0.0.0.0',
           '--server',
