@@ -1,8 +1,8 @@
 # Versions
 
-## 6.0.2
+## 6.0.3
 
-- Change default BItcoin Core version to 23.0
+- Change default Bitcoin Core version to 23.0
 
 ## 6.0.1
 
