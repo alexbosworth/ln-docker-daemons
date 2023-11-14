@@ -1,5 +1,9 @@
 # Versions
 
+## 6.0.4
+
+- Change default LND version to v0.17.1-beta
+
 ## 6.0.3
 
 - Change default Bitcoin Core version to 23.0
