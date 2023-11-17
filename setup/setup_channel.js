@@ -12,6 +12,8 @@ const channelCapacityTokens = 1e6;
 const confCount = 6;
 const count = 100;
 const defaultFee = 1e3;
+const defaultRetryCount = 1;
+const defaultDelay = 1;
 const interval = 100;
 const times = 1500;
 
@@ -41,22 +43,29 @@ module.exports = (args, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
       // Make sure the node is connected
-      addPeer: cbk => {
-        return addPeer({
-          lnd: args.lnd,
-          public_key: args.to.id || args.to.public_key,
-          socket: args.to.socket,
-        },
-        cbk);
+      addPeer: async () => {
+        await asyncRetry({interval, times}, async () => {
+          await args.generate({});
+
+          return await addPeer({
+            lnd: args.lnd,
+            public_key: args.to.id || args.to.public_key,
+            retry_count: defaultRetryCount,
+            retry_delay: defaultDelay,
+            socket: args.to.socket,
+          });
+        });
       },
 
       // Make sure the node has funds
       generateFunds: async () => await args.generate({count}),
 
       // Open channel
-      chanOpen: cbk => {
-        return asyncRetry({interval, times}, cbk => {
-          return openChannel({
+      chanOpen: async () => {
+        return await asyncRetry({interval, times}, async () => {
+          await args.generate({});
+
+          return await openChannel({
             chain_fee_tokens_per_vbyte: defaultFee,
             give_tokens: args.give_tokens,
             is_private: args.is_private,
@@ -65,10 +74,8 @@ module.exports = (args, cbk) => {
             partner_csv_delay: args.partner_csv_delay,
             partner_public_key: args.to.public_key || args.to.id,
             socket: args.to.socket,
-          },
-          cbk);
-        },
-        cbk);
+          });
+        });
       },
 
       // Wait for pending
