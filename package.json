@@ -12,12 +12,12 @@
     "asyncjs-util": "1.2.12",
     "dockerode": "4.0.9",
     "find-free-ports": "3.1.1",
-    "lightning": "10.27.4",
+    "lightning": "11.0.2",
     "tar-stream": "3.1.7"
   },
   "description": "Spawn and control LN Docker daemons",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "keywords": [
     "docker",
@@ -33,5 +33,5 @@
   "scripts": {
     "test": "npx nyc@17.1.0 node --experimental-test-coverage --test"
   },
-  "version": "6.0.28"
+  "version": "7.0.0"
 }

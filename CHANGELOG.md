@@ -1,5 +1,13 @@
 # Versions
 
+## 7.0.0
+
+- Change default LND version to v0.20.1-beta
+
+### Breaking Changes
+
+- Require node.js v20+
+
 ## 6.0.28
 
 - Change default LND version to v0.20.0-beta
