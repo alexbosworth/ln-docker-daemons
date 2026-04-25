@@ -10,7 +10,7 @@
     "@alexbosworth/node-fetch": "2.6.2",
     "async": "3.2.6",
     "asyncjs-util": "1.2.12",
-    "dockerode": "4.0.10",
+    "dockerode": "5.0.0",
     "find-free-ports": "3.1.1",
     "lightning": "11.0.5",
     "tar-stream": "3.1.8"
@@ -33,5 +33,5 @@
   "scripts": {
     "test": "npx nyc@17.1.0 node --experimental-test-coverage --test"
   },
-  "version": "7.0.1"
+  "version": "7.0.2"
 }
