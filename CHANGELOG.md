@@ -1,5 +1,9 @@
 # Versions
 
+## 8.0.1
+
+- Change default LND version to v0.21.0-beta
+
 ## 8.0.0
 
 - Require node.js v22+
