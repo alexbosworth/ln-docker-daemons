@@ -10,9 +10,9 @@
     "@alexbosworth/node-fetch": "2.6.2",
     "async": "3.2.6",
     "asyncjs-util": "1.2.12",
-    "dockerode": "5.0.0",
+    "dockerode": "5.0.1",
     "find-free-ports": "3.1.1",
-    "lightning": "12.1.0",
+    "lightning": "12.1.1",
     "tar-stream": "3.2.0"
   },
   "description": "Spawn and control LN Docker daemons",
@@ -33,5 +33,5 @@
   "scripts": {
     "test": "npx nyc@17.1.0 node --experimental-test-coverage --test"
   },
-  "version": "8.0.1"
+  "version": "8.0.2"
 }

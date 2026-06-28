@@ -1,6 +1,10 @@
 # Versions
 
-## 8.0.1
+## 8.0.3
+
+- Change default LND version to v0.21.1-beta
+
+## 8.0.2
 
 - Change default LND version to v0.21.0-beta
 

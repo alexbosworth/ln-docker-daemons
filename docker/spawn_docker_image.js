@@ -145,9 +145,11 @@ module.exports = ({arguments, expose, image, ports}, cbk) => {
             return cbk([503, 'UnexpectedErrorGettingContainerDetails', {err}]);
           }
 
+          const network = res.NetworkSettings;
+
           return cbk(null, {
             getFile: ({path}, cbk) => getFile({container, path}, cbk),
-            host: res.NetworkSettings.IPAddress,
+            host: network.IPAddress || network.Networks.bridge.IPAddress,
             kill: ({}, cbk) => killDocker({container}, cbk),
           });
         });
