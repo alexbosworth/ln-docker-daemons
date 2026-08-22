@@ -17,7 +17,7 @@
     "asyncjs-util": "1.2.12",
     "dockerode": "5.0.1",
     "find-free-ports": "3.1.1",
-    "lightning": "12.2.6",
+    "lightning": "12.2.8",
     "tar-stream": "3.2.0"
   },
   "description": "Spawn and control LN Docker daemons",
@@ -38,5 +38,5 @@
   "scripts": {
     "test": "node --experimental-test-coverage --test"
   },
-  "version": "8.0.3"
+  "version": "8.0.4"
 }
