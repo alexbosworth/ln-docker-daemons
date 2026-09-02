@@ -1,8 +1,8 @@
 {
   "allowScripts": {
     "cpu-features@0.0.10": true,
-    "protobufjs@7.6.5": true,
-    "ssh2@1.17.0": true
+    "ssh2@1.17.0": true,
+    "protobufjs@7.6.6": true
   },
   "author": {
     "name": "Alex Bosworth",
@@ -17,8 +17,8 @@
     "asyncjs-util": "1.2.12",
     "dockerode": "5.0.1",
     "find-free-ports": "3.1.1",
-    "lightning": "12.2.8",
-    "tar-stream": "3.2.0"
+    "lightning": "12.2.11",
+    "tar-stream": "3.2.1"
   },
   "description": "Spawn and control LN Docker daemons",
   "engines": {
@@ -38,5 +38,5 @@
   "scripts": {
     "test": "node --experimental-test-coverage --test"
   },
-  "version": "8.0.4"
+  "version": "8.0.5"
 }
