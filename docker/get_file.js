@@ -1,6 +1,9 @@
 const asyncAuto = require('async/auto');
 const {returnResult} = require('asyncjs-util');
-const tar = require('tar-stream');
+
+const firstFileInTar = require('./first_file_in_tar');
+
+const {concat} = Buffer;
 
 /** Get a file from inside a docker container
 
@@ -42,26 +45,17 @@ module.exports = ({container, path}, cbk) => {
             return cbk([503, 'UnexpectedErrorGettingFileFromDocker', {err}]);
           }
 
-          const entries = [];
-          const extract = tar.extract();
+          const parts = [];
 
-          extract.once('entry', (header, stream, cbk) => {
-            const parts = [];
+          stream.on('data', part => parts.push(part));
 
-            stream.on('data', part => parts.push(part));
-
-            stream.once('end', () => {
-              entries.push(Buffer.concat(parts));
-
-              return cbk();
-            });
-
-            return stream.resume();
+          stream.once('error', err => {
+            return cbk([503, 'FailedToReadFileArchiveFromDocker', {err}]);
           });
 
-          extract.once('finish', () => cbk(null, entries));
-
-          stream.pipe(extract);
+          stream.once('end', () => {
+            return cbk(null, firstFileInTar({tar: concat(parts)}).file);
+          });
 
           return;
         });
@@ -69,9 +63,7 @@ module.exports = ({container, path}, cbk) => {
 
       // Final resulting file
       file: ['getArchive', ({getArchive}, cbk) => {
-        const [file] = getArchive;
-
-        return cbk(null, {file});
+        return cbk(null, {file: getArchive});
       }],
     },
     returnResult({reject, resolve, of: 'file'}, cbk));

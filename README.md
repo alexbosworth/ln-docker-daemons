@@ -126,13 +126,25 @@ await kill({});
 
 Spawn a cluster of nodes
 
+When a channel capacity is specified, each node opens a channel of that size
+to the next node, so the nodes form a line: A -> B -> C
+
     {
+      [capacity]: <Channel Capacity Tokens Number>
       [lnd_configuration]: [<LND Configuration Argument String>]
       [size]: <Total Lightning Nodes Number>
     }
 
     @returns via cbk or Promise
     {
+      channels: [{
+        from: <Opening Node Index Number>
+        id: <Standard Format Channel Id String>
+        to: <Partner Node Index Number>
+        transaction_id: <Funding Transaction Id Hex String>
+        transaction_vout: <Funding Transaction Output Index Number>
+      }]
+      kill: <Kill All Nodes Function> ({}) => {}
       nodes: [{
         generate: <Make Block Function> ({address, count}, [cbk]) => {}
         id: <Node Public Key Hex String>
@@ -160,6 +172,23 @@ const publicKey = (await getIdentity({lnd})).public_key;
 await generate({count: 500});
 
 // Stop the image
+await kill({});
+```
+
+Example with channels:
+
+```node
+const {spawnLightningCluster} = require('ln-docker-daemons');
+
+// Launch three nodes with channels Alice -> Bob -> Carol
+const {channels, kill, nodes} = await spawnLightningCluster({
+  capacity: 1e6,
+  size: 3,
+});
+
+const [alice, bob, carol] = nodes;
+
+// Stop all the nodes
 await kill({});
 ```
 

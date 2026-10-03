@@ -1,19 +1,13 @@
-const fetch = require('@alexbosworth/node-fetch');
-const http = require('http');
-const https = require('https');
-
 const asyncAuto = require('async/auto');
 const {returnResult} = require('asyncjs-util');
 
 const defaultTimeout = 1000 * 30;
-const agents = {};
 let requests = 0;
 const {stringify} = JSON;
 
 /** Call JSON RPC
 
   {
-    [cert]: <Cert Buffer Object>
     cmd: <Command String>
     host: <Host Name String>
     params: [<Parameter Object>]
@@ -25,7 +19,7 @@ const {stringify} = JSON;
   @returns via cbk or Promise
   <Result Object>
 */
-module.exports = ({cert, cmd, host, params, pass, port, user}, cbk) => {
+module.exports = ({cmd, host, params, pass, port, user}, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
       // Check arguments
@@ -53,26 +47,14 @@ module.exports = ({cert, cmd, host, params, pass, port, user}, cbk) => {
         return cbk();
       },
 
-      // Derive an HTTP agent as necessary for using a self-signed cert
-      agent: ['validate', async ({}) => {
-        // Exit early when there is no cert and this is a regular HTTP request
-        if (!cert) {
-          return new http.Agent({});
-        }
-
-        return new https.Agent({cert, ca: [cert], ecdhCurve: 'auto'});
-      }],
-
       // Send request to the server
-      request: ['agent', async ({agent}) => {
+      request: ['validate', async ({}) => {
         const credentials = Buffer.from(`${user}:${pass}`);
-        const scheme = !!cert ? 'https' : 'http';
 
         try {
-        	const response = await fetch(
-            `${scheme}://${host}:${port}/`,
+          const response = await fetch(
+            `http://${host}:${port}/`,
             {
-              agent,
               body: stringify({
                 id: `${++requests}`,
                 method: cmd,
@@ -90,7 +72,7 @@ module.exports = ({cert, cmd, host, params, pass, port, user}, cbk) => {
 
           return result;
         } catch (err) {
-          if (err.code === 'ECONNRESET') {
+          if ([err.code, err.cause?.code].includes('ECONNRESET')) {
             throw [503, 'ConnectionToBitcoindRpcServiceFailed'];
           }
 
