@@ -1,12 +1,16 @@
 const asyncAuto = require('async/auto');
+const asyncQueue = require('async/queue');
 const {returnResult} = require('asyncjs-util');
 
-const rpc = require('./rpc');
+const mineBlocks = require('./mine_blocks');
 
-const cmd = 'generatetoaddress';
-const host = 'localhost';
+const queue = asyncQueue(mineBlocks, 1);
 
 /** Generate blocks and mine coinbase outputs to an address
+
+  Requests run one at a time. When the outcome of a request is unclear, blocks
+  on top of where it started can then only be from that request, unless they
+  were mined outside of this process.
 
   {
     address: <Address to Mine Outputs Towards String>
@@ -17,9 +21,7 @@ const host = 'localhost';
   }
 
   @returns via cbk or Promise
-  {
-    blocks: <Best Chain Block Height Number>
-  }
+  [<Generated Block Hash Hex String>]
 */
 module.exports = ({address, count, pass, port, user}, cbk) => {
   return new Promise((resolve, reject) => {
@@ -45,13 +47,18 @@ module.exports = ({address, count, pass, port, user}, cbk) => {
         return cbk();
       },
 
-      // Execute request
-      request: ['validate', ({}, cbk) => {
-        const params = [count || [address].length, address];
-
-        return rpc({cmd, host, pass, params, port, user}, cbk);
+      // Mine the blocks once earlier generate requests are done
+      generate: ['validate', ({}, cbk) => {
+        return queue.push({
+          address,
+          pass,
+          port,
+          user,
+          count: count || [address].length,
+        },
+        cbk);
       }],
     },
-    returnResult({reject, resolve, of: 'request'}, cbk));
+    returnResult({reject, resolve, of: 'generate'}, cbk));
   });
 };

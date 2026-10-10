@@ -141,13 +141,14 @@ module.exports = (args, cbk) => {
           }),
           cert: spawnLightningDaemon.cert,
           chain_socket: `${spawnChainDaemon.host}`,
-          generate: ({address, count}) => generateToAddress({
+          generate: ({address, count}, cbk) => generateToAddress({
             address,
             count,
             pass: spawnChainDaemon.rpc_pass,
             port: args.chain_rpc_port,
             user: spawnChainDaemon.rpc_user,
-          }),
+          },
+          cbk),
           get_block_info: ({id}) => getBlockInfo({
             id,
             pass: spawnChainDaemon.rpc_pass,

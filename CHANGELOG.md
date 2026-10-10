@@ -1,6 +1,6 @@
 # Versions
 
-## 8.1.0
+## 8.1.1
 
 - Change default LND version to v0.21.4-beta
 - `spawnLightningCluster`: Add `capacity` to open channels between nodes

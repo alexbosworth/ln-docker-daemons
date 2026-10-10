@@ -4,12 +4,11 @@ const asyncMap = require('async/map');
 const asyncMapSeries = require('async/mapSeries');
 const asyncRetry = require('async/retry');
 const {authenticatedLndGrpc} = require('lightning');
-const {createChainAddress} = require('lightning');
 const {findFreePorts} = require('find-free-ports');
-const {getUtxos} = require('lightning');
 const {getIdentity} = require('lightning');
 const {returnResult} = require('asyncjs-util');
 
+const generateBlocks = require('./generate_blocks');
 const {setupChannel} = require('./../setup');
 const {spawnLightningDocker} = require('./../lnd');
 
@@ -21,12 +20,9 @@ const generateAddress = '2N8hwP1WmJrFF5QWABn38y63uYLhnJYJYTF';
 const interval = 10;
 const {isInteger} = Number;
 const line = arr => arr.slice(1).map((_, i) => [i, i + 1]);
-const makeAddress = ({lnd}) => createChainAddress({lnd});
-const maturity = 100;
 const pairs = n => n.map((x, i) => n.slice(i + 1).map(y => [x, y])).flat();
 const portsPerLnd = 7;
 const startPort = 1025;
-const times = 3000;
 
 /** Spawn a cluster of nodes
 
@@ -129,29 +125,14 @@ module.exports = (args, cbk) => {
                 getBlockInfo: lightningDocker.get_block_info,
                 socket: lightningDocker.chain_socket,
               },
-              generate: ({address, count}) => {
-                return new Promise(async (resolve, reject) => {
-                  await lightningDocker.generate({
-                    count,
-                    address: address || (await makeAddress({lnd})).address,
-                  });
-
-                  if (!count || count < maturity) {
-                    return resolve();
-                  }
-
-                  await asyncRetry({interval, times}, async () => {
-                    const [utxo] = (await getUtxos({lnd})).utxos;
-
-                    if (!utxo) {
-                      throw new Error('ExpectedUtxoInUtxos');
-                    }
-
-                    return utxo;
-                  });
-
-                  return resolve();
-                });
+              generate: ({address, count}, cbk) => {
+                return generateBlocks({
+                  address,
+                  count,
+                  lnd,
+                  generate: lightningDocker.generate,
+                },
+                cbk);
               },
               kill: lightningDocker.kill,
               public_key: id,
