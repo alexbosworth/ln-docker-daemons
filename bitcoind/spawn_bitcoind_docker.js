@@ -12,18 +12,26 @@ const {rpcUser} = require('./constants');
 const {spawnDockerImage} =  require('./../docker');
 
 const clean = string => string.replace(/\+/g, '-').replace(/\//g, '_');
+const defaultZmqBlockPort = 28332;
+const defaultZmqTxPort = 28333;
 const deriveHmac = (s, p) => createHmac('sha256', s).update(p).digest('hex');
 const generateAuthSalt = () => randomBytes(16).toString('hex');
 const generatePassword = () => randomBytes(32).toString('base64');
 const interval = 100;
 const times = 100;
 const trim = string => string.replace(/=+$/g, '');
+const zmqBlockPort = args => args.zmq_block_port || defaultZmqBlockPort;
+const zmqTxPort = args => args.zmq_tx_port || defaultZmqTxPort;
 
 /** Spawn a Bitcoin Core Docker image
 
+  Ports that are not specified are not published to the host, except for RPC,
+  which is published on a free port picked by Docker. ZMQ defaults to ports
+  28332 and 28333 inside the container.
+
   {
-    p2p_port: <P2P Port Number>
-    rpc_port: <RPC Port Number>
+    [p2p_port]: <P2P Port Number>
+    [rpc_port]: <RPC Port Number>
     [zmq_block_port]: <ZMQ Blocks Port Number>
     [zmq_tx_port]: <ZMQ Transactions Port Number>
   }
@@ -33,27 +41,17 @@ const trim = string => string.replace(/=+$/g, '');
     host: <Host String>
     kill: ({}, [cbk]) => <Kill Promise>
     rpc_pass: <RPC Password String>
+    rpc_port: <RPC Port Number>
     rpc_user: <RPC Username String>
+    zmq_block_port: <ZMQ Blocks Port Number>
+    zmq_tx_port: <ZMQ Transactions Port Number>
   }
 */
 module.exports = (args, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
-      // Check arguments
-      validate: cbk => {
-        if (!args.p2p_port) {
-          return cbk([400, 'ExpectedPeerListenPortToSpawnBitcoindDocker']);
-        }
-
-        if (!args.rpc_port) {
-          return cbk([400, 'ExpectedRpcListenPortToSpawnBitcoindDocker']);
-        }
-
-        return cbk();
-      },
-
       // Generate auth
-      generateAuth: ['validate', ({}, cbk) => {
+      generateAuth: cbk => {
         const pass = trim(clean(generatePassword()));
         const salt = generateAuthSalt();
 
@@ -61,7 +59,7 @@ module.exports = (args, cbk) => {
           rpc_auth: `${rpcUser}:${salt}$${deriveHmac(salt, pass)}`,
           rpc_pass: pass,
         });
-      }],
+      },
 
       // Spawn the docker image
       spawnDocker: ['generateAuth', ({generateAuth}, cbk) => {
@@ -76,18 +74,25 @@ module.exports = (args, cbk) => {
           '--rpcbind=0.0.0.0',
           '--server',
           '--txindex',
+          `--zmqpubrawblock=tcp://*:${zmqBlockPort(args)}`,
+          `--zmqpubrawtx=tcp://*:${zmqTxPort(args)}`,
         ];
 
         const image = dockerBitcoindImage;
-        const ports = {'18443/tcp': args.rpc_port, '18444/tcp': args.p2p_port};
+
+        // Docker picks a free host port for RPC when no port is specified
+        const ports = {'18443/tcp': args.rpc_port};
+
+        // Other ports are reached over the Docker network unless specified
+        if (!!args.p2p_port) {
+          ports['18444/tcp'] = args.p2p_port;
+        }
 
         if (!!args.zmq_block_port) {
-          arguments.push('--zmqpubrawblock=tcp://*:' + args.zmq_block_port);
           ports[`${args.zmq_block_port}/tcp`] = args.zmq_block_port;
         }
 
         if (!!args.zmq_tx_port) {
-          arguments.push('--zmqpubrawtx=tcp://*:' + args.zmq_tx_port);
           ports[`${args.zmq_tx_port}/tcp`] = args.zmq_tx_port;
         }
 
@@ -95,16 +100,28 @@ module.exports = (args, cbk) => {
       }],
 
       // Wait for the image to respond to a query
-      checkReady: ['generateAuth', 'spawnDocker', ({generateAuth}, cbk) => {
+      checkReady: [
+        'generateAuth',
+        'spawnDocker',
+        ({generateAuth, spawnDocker}, cbk) =>
+      {
         return asyncRetry({interval, times}, cbk => {
           return getBlockchainInfo({
             pass: generateAuth.rpc_pass,
-            port: args.rpc_port,
+            port: spawnDocker.ports['18443/tcp'],
             user: rpcUser,
           },
           cbk);
         },
-        cbk);
+        err => {
+          // Exit early when bitcoind is responding
+          if (!err) {
+            return cbk();
+          }
+
+          // Stop the container when bitcoind never responds
+          return spawnDocker.kill({}, () => cbk(err));
+        });
       }],
 
       // Final docker object
@@ -118,7 +135,10 @@ module.exports = (args, cbk) => {
           host: spawnDocker.host,
           kill: spawnDocker.kill,
           rpc_pass: generateAuth.rpc_pass,
+          rpc_port: spawnDocker.ports['18443/tcp'],
           rpc_user: rpcUser,
+          zmq_block_port: zmqBlockPort(args),
+          zmq_tx_port: zmqTxPort(args),
         });
       }],
     },

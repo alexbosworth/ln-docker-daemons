@@ -12,6 +12,8 @@ const stopAfterRuntimeSeconds = 60;
 
 /** Spawn a new docker image
 
+  An undefined external port is published on a free port that Docker picks
+
   {
     arguments: [<Command Arguments String>]
     [expose]: [<Expose Port String>]
@@ -24,7 +26,11 @@ const stopAfterRuntimeSeconds = 60;
   @returns via cbk or Promise
   {
     getFile: <Get File Function>
+    host: <Container Network Address String>
     kill: <Kill Daemon Function>
+    ports: {
+      <Internal Port String>: <External Port Number>
+    }
   }
 */
 module.exports = ({arguments, expose, image, ports}, cbk) => {
@@ -106,7 +112,8 @@ module.exports = ({arguments, expose, image, ports}, cbk) => {
           HostConfig: {
             AutoRemove: true,
             PortBindings: keys(ports).reduce((sum, port) => {
-              sum[port] = [{HostPort: ports[port].toString()}];
+              // Docker picks a free host port when none is specified
+              sum[port] = [{HostPort: !ports[port] ? '' : `${ports[port]}`}];
 
               return sum;
             },
@@ -135,22 +142,53 @@ module.exports = ({arguments, expose, image, ports}, cbk) => {
             return cbk();
           });
         },
-        cbk);
+        err => {
+          // Exit early when the container started
+          if (!err) {
+            return cbk();
+          }
+
+          // Remove the container so a failed start does not leave it behind
+          return container.remove({force: true}, () => cbk(err));
+        });
       }],
 
       // Get the details about the container
       spawned: ['container', 'start', ({container}, cbk) => {
         return container.inspect({}, (err, res) => {
           if (!!err) {
-            return cbk([503, 'UnexpectedErrorGettingContainerDetails', {err}]);
+            return killDocker({container}, () => cbk([
+              503,
+              'UnexpectedErrorGettingContainerDetails',
+              {err},
+            ]));
           }
 
           const network = res.NetworkSettings;
+          const published = network.Ports || {};
+          const {bridge} = network.Networks || {};
+
+          const host = network.IPAddress || (!!bridge && bridge.IPAddress);
+
+          // Exit early when the container has no network address
+          if (!host) {
+            return killDocker({container}, () => {
+              return cbk([503, 'ExpectedNetworkAddressForDockerContainer']);
+            });
+          }
 
           return cbk(null, {
+            host,
             getFile: ({path}, cbk) => getFile({container, path}, cbk),
-            host: network.IPAddress || network.Networks.bridge.IPAddress,
             kill: ({}, cbk) => killDocker({container}, cbk),
+            ports: keys(ports).reduce((sum, port) => {
+              const [binding] = published[port] || [];
+
+              sum[port] = !binding ? undefined : Number(binding.HostPort);
+
+              return sum;
+            },
+            {}),
           });
         });
       }],

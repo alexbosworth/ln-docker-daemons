@@ -11,11 +11,18 @@ const {spawnDockerImage} = require('./../docker');
 const imageName = ver => !!ver ? `lightninglabs/lnd:${ver}` : dockerLndImage;
 const interval = 100;
 const join = n => n.join('');
+const localSocket = port => `localhost:${port}`;
 const macaroonPath = '/root/.lnd/data/chain/bitcoin/regtest/admin.macaroon';
+const p2pPort = '9735/tcp';
+const rpcPort = '10009/tcp';
 const times = 500;
 const tlsCertPath = '/root/.lnd/tls.cert';
+const towerPort = '9911/tcp';
 
 /** Spawn a new Docker image running LND
+
+  When RPC or tower ports are not specified, Docker picks free host ports for
+  them. A p2p port that is not specified is not published to the host.
 
   {
     bitcoind_rpc_host: <Bitcoin Core RPC Host String>
@@ -25,9 +32,9 @@ const tlsCertPath = '/root/.lnd/tls.cert';
     [bitcoind_zmq_block_port]: <Bitcoin Core ZMQ Block Port Number>
     [bitcoind_zmq_tx_port]: <Bitcoin Core ZMQ Transaction Port Number>
     [configuration]: [<LND Configuration Argument String>]
-    p2p_port: <LND Peer to Peer Listen Port Number>
-    rpc_port: <LND RPC Port Number>
-    tower_port: <LND Tower Port Number>
+    [p2p_port]: <LND Peer to Peer Listen Port Number>
+    [rpc_port]: <LND RPC Port Number>
+    [tower_port]: <LND Tower Port Number>
     [seed]: <Mnemonic Seed String>
   }
 
@@ -56,18 +63,6 @@ module.exports = (args, cbk) => {
 
         if (!args.bitcoind_rpc_user) {
           return cbk([400, 'ExpectedBitcoinCoreRpcUserToSpawnLndDocker']);
-        }
-
-        if (!args.p2p_port) {
-          return cbk([400, 'ExpectedLndPeer2PeerNetworkPortToSpawnLndDocker']);
-        }
-
-        if (!args.rpc_port) {
-          return cbk([400, 'ExpectedRpcPortToSpawnLndDocker']);
-        }
-
-        if (!args.tower_port) {
-          return cbk([400, 'ExpectedTowerPortToSpawnLndDocker']);
         }
 
         return cbk();
@@ -124,14 +119,21 @@ module.exports = (args, cbk) => {
           arguments.push('--bitcoind.txpollinginterval=1s');
         }
 
+        // Docker picks free host ports for RPC and tower when not specified
+        const ports = {
+          [rpcPort]: args.rpc_port,
+          [towerPort]: args.tower_port,
+        };
+
+        // Peers connect over the Docker network unless a p2p port is specified
+        if (!!args.p2p_port) {
+          ports[p2pPort] = args.p2p_port;
+        }
+
         return spawnDockerImage({
+          ports,
           arguments: arguments.concat(args.configuration || []),
           image: imageName(process.env.DOCKER_LND_VERSION),
-          ports: {
-            '9735/tcp': args.p2p_port,
-            '9911/tcp': args.tower_port,
-            '10009/tcp': args.rpc_port,
-          },
         },
         cbk);
       }],
@@ -145,9 +147,13 @@ module.exports = (args, cbk) => {
       }],
 
       // Create a wallet for the LND
-      createWallet: ['getCertificate', ({getCertificate}, cbk) => {
+      createWallet: [
+        'getCertificate',
+        'spawnDocker',
+        ({getCertificate, spawnDocker}, cbk) =>
+      {
         const cert = getCertificate.file.toString('hex');
-        const socket = `localhost:${args.rpc_port}`;
+        const socket = localSocket(spawnDocker.ports[rpcPort]);
 
         const {lnd} = unauthenticatedLndGrpc({cert, socket});
 
@@ -185,7 +191,7 @@ module.exports = (args, cbk) => {
         const {lnd} = authenticatedLndGrpc({
           cert: getCertificate.file.toString('hex'),
           macaroon: createWallet.toString('hex'),
-          socket: `localhost:${args.rpc_port}`,
+          socket: localSocket(spawnDocker.ports[rpcPort]),
         });
 
         return asyncRetry({interval, times}, cbk => {
@@ -208,11 +214,20 @@ module.exports = (args, cbk) => {
           kill: spawnDocker.kill,
           macaroon: createWallet.toString('hex'),
           public_key: waitForRpc.public_key,
-          socket: `localhost:${args.rpc_port}`,
-          tower_socket: `localhost:${args.tower_port}`,
+          socket: localSocket(spawnDocker.ports[rpcPort]),
+          tower_socket: localSocket(spawnDocker.ports[towerPort]),
         });
       }],
     },
-    returnResult({reject, resolve, of: 'spawned'}, cbk));
+    (err, res) => {
+      // Stop the container when LND does not start so it is not left running
+      if (!!err && !!res && !!res.spawnDocker) {
+        return res.spawnDocker.kill({}, () => {
+          return returnResult({reject, resolve}, cbk)(err);
+        });
+      }
+
+      return returnResult({reject, resolve, of: 'spawned'}, cbk)(err, res);
+    });
   });
 };

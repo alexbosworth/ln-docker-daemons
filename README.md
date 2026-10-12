@@ -90,11 +90,15 @@ await kill({});
 
 Spawn a Bitcoin Core Docker image
 
+Ports that are not specified are not published to the host, except for RPC,
+which is published on a free port picked by Docker. ZMQ defaults to ports
+28332 and 28333 inside the container.
+
     {
-      p2p_port: <P2P Port Number>
-      rpc_port: <RPC Port Number>
-      zmq_block_port: <ZMQ Blocks Port Number>
-      zmq_tx_port: <ZMQ Transactions Port Number>
+      [p2p_port]: <P2P Port Number>
+      [rpc_port]: <RPC Port Number>
+      [zmq_block_port]: <ZMQ Blocks Port Number>
+      [zmq_tx_port]: <ZMQ Transactions Port Number>
     }
 
     @returns via cbk or Promise
@@ -102,7 +106,10 @@ Spawn a Bitcoin Core Docker image
       host: <Host String>
       kill: ({}, [cbk]) => <Kill Promise>
       rpc_pass: <RPC Password String>
+      rpc_port: <RPC Port Number>
       rpc_user: <RPC Username String>
+      zmq_block_port: <ZMQ Blocks Port Number>
+      zmq_tx_port: <ZMQ Transactions Port Number>
     }
 
 Example:
@@ -110,13 +117,8 @@ Example:
 ```node
 const {spawnBitcoindDocker} = require('ln-docker-daemons');
 
-// Launch a Bitcoind Docker image
-const {kill} = spawnBitcoindDocker({
-  p2p_port: 2345,
-  rpc_port: 3456,
-  zmq_block_port: 4567,
-  zmq_tx_port: 5678,
-});
+// Launch a Bitcoind Docker image, Docker picks a free port for RPC
+const {kill, rpc_port} = await spawnBitcoindDocker({});
 
 // Stop the image
 await kill({});
@@ -196,15 +198,19 @@ await kill({});
 
 Spawn an LND Docker
 
+Ports are optional. When RPC or tower ports are not specified, Docker picks
+free host ports for them. Other ports that are not specified are only
+reachable over the Docker network.
+
     {
-      chain_p2p_port: <Chain Network P2P Listen Port Number>
-      chain_rpc_port: <Chain Node RPC Port Number>
-      chain_zmq_block_port: <Chain Node ZMQ Blocks Port Number>
-      chain_zmq_tx_port: <Chain Node ZMQ Transactions Port Number>
+      [chain_p2p_port]: <Chain Network P2P Listen Port Number>
+      [chain_rpc_port]: <Chain Node RPC Port Number>
+      [chain_zmq_block_port]: <Chain Node ZMQ Blocks Port Number>
+      [chain_zmq_tx_port]: <Chain Node ZMQ Transactions Port Number>
       generate_address: <Generate Blocks to Address String>
-      lightning_p2p_port: <Lightning Network P2P Listen Port Number>
-      lightning_rpc_port: <Lightning Node RPC Port Number>
-      lightning_tower_port: <Lightning Tower Port Number>
+      [lightning_p2p_port]: <Lightning Network P2P Listen Port Number>
+      [lightning_rpc_port]: <Lightning Node RPC Port Number>
+      [lightning_tower_port]: <Lightning Tower Port Number>
       [lnd_configuration]: [<LND Configuration Argument String>]
       [seed]: <Mnemonic Seed String>
     }
@@ -226,6 +232,9 @@ Spawn an LND Docker
 
 Spawn a new Docker image running LND
 
+When RPC or tower ports are not specified, Docker picks free host ports for
+them. A p2p port that is not specified is not published to the host.
+
     {
       bitcoind_rpc_host: <Bitcoin Core RPC Host String>
       bitcoind_rpc_pass: <Bitcoin Core RPC Password String>
@@ -234,9 +243,9 @@ Spawn a new Docker image running LND
       [bitcoind_zmq_block_port]: <Bitcoin Core ZMQ Block Port Number>
       [bitcoind_zmq_tx_port]: <Bitcoin Core ZMQ Transaction Port Number>
       [configuration]: [<LND Configuration Argument String>]
-      p2p_port: <LND Peer to Peer Listen Port Number>
-      rpc_port: <LND RPC Port Number>
-      tower_port: <LND Tower Port Number>
+      [p2p_port]: <LND Peer to Peer Listen Port Number>
+      [rpc_port]: <LND RPC Port Number>
+      [tower_port]: <LND Tower Port Number>
       [seed]: <Mnemonic Seed String>
     }
 

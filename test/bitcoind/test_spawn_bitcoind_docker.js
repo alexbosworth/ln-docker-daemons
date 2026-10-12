@@ -1,24 +1,25 @@
+const {deepEqual} = require('node:assert').strict;
 const test = require('node:test');
 
-const {findFreePorts} = require('find-free-ports');
-
+const {getBlockchainInfo} = require('./../../bitcoinrpc');
 const {spawnBitcoindDocker} = require('./../../');
 
 // Spawning a Bitcoin Core docker image should launch
 test('Spawn Bitcoin Core Docker image', async () => {
-  const [p2pPort, rpcPort, zmqBlockPort, zmqTxPort] = await findFreePorts(
-    4,
-    {startPort: 5000}
-  );
+  const bitcoind = await spawnBitcoindDocker({});
 
-  const {kill} = await spawnBitcoindDocker({
-    p2p_port: p2pPort,
-    rpc_port: rpcPort,
-    zmq_block_port: zmqBlockPort,
-    zmq_tx_port: zmqTxPort,
-  });
+  try {
+    // Docker picked a free port for RPC and bitcoind answers on it
+    const {blocks} = await getBlockchainInfo({
+      pass: bitcoind.rpc_pass,
+      port: bitcoind.rpc_port,
+      user: bitcoind.rpc_user,
+    });
 
-  await kill({});
+    deepEqual(blocks, 0);
+  } finally {
+    await bitcoind.kill({});
+  }
 
   return;
 });

@@ -1,28 +1,21 @@
 const asyncAuto = require('async/auto');
 const asyncEach = require('async/each');
-const asyncMap = require('async/map');
 const asyncMapSeries = require('async/mapSeries');
 const asyncRetry = require('async/retry');
 const {authenticatedLndGrpc} = require('lightning');
-const {findFreePorts} = require('find-free-ports');
-const {getIdentity} = require('lightning');
 const {returnResult} = require('asyncjs-util');
 
 const generateBlocks = require('./generate_blocks');
 const {setupChannel} = require('./../setup');
 const {spawnLightningDocker} = require('./../lnd');
 
-const between = (min, max) => Math.floor(Math.random() * (max - min) + min);
-const chunk = (arr, n, size) => [...Array(size)].map(_ => arr.splice(0, n));
 const count = size => size || 1;
-const endPort = 65000;
 const generateAddress = '2N8hwP1WmJrFF5QWABn38y63uYLhnJYJYTF';
 const interval = 10;
 const {isInteger} = Number;
 const line = arr => arr.slice(1).map((_, i) => [i, i + 1]);
 const pairs = n => n.map((x, i) => n.slice(i + 1).map(y => [x, y])).flat();
-const portsPerLnd = 7;
-const startPort = 1025;
+const started = all => all.filter(n => !!n.value).map(n => n.value);
 
 /** Spawn a cluster of nodes
 
@@ -75,46 +68,35 @@ module.exports = (args, cbk) => {
       // Spawn nodes
       spawn: ['validate', async () => {
         return await asyncRetry({interval, times: 25}, async () => {
-          const options = {startPort: between(startPort, endPort)};
-
-          // Find ports for the requested daemons
-          const findPorts = await findFreePorts(
-            portsPerLnd * count(args.size),
-            options
-          );
-
-          const nodes = chunk(findPorts, portsPerLnd, count(args.size));
-
-          return await asyncMap(nodes, async (ports) => {
-            const [
-              chainP2pPort,
-              chainRpcPort,
-              chainZmqBlockPort,
-              chainZmqTxPort,
-              lightningP2pPort,
-              lightningRpcPort,
-              lightningTowerPort,
-            ] = ports;
-
-            const lightningDocker = await spawnLightningDocker({
-              chain_p2p_port: chainP2pPort,
-              chain_rpc_port: chainRpcPort,
-              chain_zmq_block_port: chainZmqBlockPort,
-              chain_zmq_tx_port: chainZmqTxPort,
+          const spawning = [...Array(count(args.size))].map(() => {
+            return spawnLightningDocker({
               generate_address: generateAddress,
-              lightning_p2p_port: lightningP2pPort,
-              lightning_rpc_port: lightningRpcPort,
-              lightning_tower_port: lightningTowerPort,
               lnd_configuration: args.lnd_configuration,
             });
+          });
+
+          // Wait for every node to finish starting, even when one fails
+          const spawned = await Promise.allSettled(spawning);
+
+          const failure = spawned.find(n => n.status === 'rejected');
+
+          // Stop the nodes that started so they are not left running
+          if (!!failure) {
+            await asyncEach(started(spawned), async ({kill}) => {
+              return await kill({});
+            });
+
+            throw failure.reason;
+          }
+
+          return started(spawned).map(lightningDocker => {
+            const id = lightningDocker.public_key;
 
             const {lnd} = authenticatedLndGrpc({
               cert: lightningDocker.cert,
               macaroon: lightningDocker.macaroon,
               socket: lightningDocker.socket,
             });
-
-            const id = (await getIdentity({lnd})).public_key;
 
             return {
               id,

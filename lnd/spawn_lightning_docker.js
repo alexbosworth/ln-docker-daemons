@@ -12,15 +12,19 @@ const defaultBitcoindRpcPort = 18443;
 
 /** Spawn an LND Docker
 
+  Ports are optional. When RPC or tower ports are not specified, Docker picks
+  free host ports for them. Other ports that are not specified are only
+  reachable over the Docker network.
+
   {
-    chain_p2p_port: <Chain Network P2P Listen Port Number>
-    chain_rpc_port: <Chain Node RPC Port Number>
-    chain_zmq_block_port: <Chain Node ZMQ Blocks Port Number>
-    chain_zmq_tx_port: <Chain Node ZMQ Transactions Port Number>
+    [chain_p2p_port]: <Chain Network P2P Listen Port Number>
+    [chain_rpc_port]: <Chain Node RPC Port Number>
+    [chain_zmq_block_port]: <Chain Node ZMQ Blocks Port Number>
+    [chain_zmq_tx_port]: <Chain Node ZMQ Transactions Port Number>
     generate_address: <Generate Blocks to Address String>
-    lightning_p2p_port: <Lightning Network P2P Listen Port Number>
-    lightning_rpc_port: <Lightning Node RPC Port Number>
-    lightning_tower_port: <Lightning Tower Port Number>
+    [lightning_p2p_port]: <Lightning Network P2P Listen Port Number>
+    [lightning_rpc_port]: <Lightning Node RPC Port Number>
+    [lightning_tower_port]: <Lightning Tower Port Number>
     [lnd_configuration]: [<LND Configuration Argument String>]
     [seed]: <Mnemonic Seed String>
   }
@@ -45,36 +49,8 @@ module.exports = (args, cbk) => {
     return asyncAuto({
       // Check arguments
       validate: cbk => {
-        if (!args.chain_p2p_port) {
-          return cbk([400, 'ExpectedBlockchainDaemonP2pPortToSpawnLnDocker']);
-        }
-
-        if (!args.chain_rpc_port) {
-          return cbk([400, 'ExpecteddChainRpcPortToSpawnLightningDocker']);
-        }
-
-        if (!args.chain_zmq_block_port) {
-          return cbk([400, 'ExpectedChainZmqBlockPortToSpawnLightningDocker']);
-        }
-
-        if (!args.chain_zmq_tx_port) {
-          return cbk([400, 'ExpectedChainZmqTxPortToSpawnLightningDocker']);
-        }
-
         if (!args.generate_address) {
           return cbk([400, 'ExpectedGenerateAddressToSpawnLightningDocker']);
-        }
-
-        if (!args.lightning_p2p_port) {
-          return cbk([400, 'ExpectedLnP2pPortToSpawnLightningDocker']);
-        }
-
-        if (!args.lightning_rpc_port) {
-          return cbk([400, 'ExpectedLnRpcPortToSpawnLightningDocker']);
-        }
-
-        if (!args.lightning_tower_port) {
-          return cbk([400, 'ExpectedLnTowerPortToSpawnLightningDocker']);
         }
 
         return cbk();
@@ -96,10 +72,18 @@ module.exports = (args, cbk) => {
         return generateToAddress({
           address: args.generate_address,
           pass: spawnChainDaemon.rpc_pass,
-          port: args.chain_rpc_port,
+          port: spawnChainDaemon.rpc_port,
           user: spawnChainDaemon.rpc_user,
         },
-        cbk);
+        err => {
+          // Exit early when the block was generated
+          if (!err) {
+            return cbk();
+          }
+
+          // Stop the chain daemon so it is not left running
+          return spawnChainDaemon.kill({}, () => cbk(err));
+        });
       }],
 
       // Spawn the LND lightning daemon
@@ -114,14 +98,22 @@ module.exports = (args, cbk) => {
           bitcoind_rpc_pass: spawnChainDaemon.rpc_pass,
           bitcoind_rpc_port: defaultBitcoindRpcPort,
           bitcoind_rpc_user: spawnChainDaemon.rpc_user,
-          bitcoind_zmq_block_port: args.chain_zmq_block_port,
-          bitcoind_zmq_tx_port: args.chain_zmq_tx_port,
+          bitcoind_zmq_block_port: spawnChainDaemon.zmq_block_port,
+          bitcoind_zmq_tx_port: spawnChainDaemon.zmq_tx_port,
           p2p_port: args.lightning_p2p_port,
           rpc_port: args.lightning_rpc_port,
           tower_port: args.lightning_tower_port,
           seed: args.seed,
         },
-        cbk);
+        (err, res) => {
+          // Exit early when LND started
+          if (!err) {
+            return cbk(null, res);
+          }
+
+          // Stop the chain daemon when LND does not start
+          return spawnChainDaemon.kill({}, () => cbk(err));
+        });
       }],
 
       // Return the result
@@ -136,7 +128,7 @@ module.exports = (args, cbk) => {
           add_chain_peer: ({socket}) => addPeer({
             socket,
             pass: spawnChainDaemon.rpc_pass,
-            port: args.chain_rpc_port,
+            port: spawnChainDaemon.rpc_port,
             user: spawnChainDaemon.rpc_user,
           }),
           cert: spawnLightningDaemon.cert,
@@ -145,14 +137,14 @@ module.exports = (args, cbk) => {
             address,
             count,
             pass: spawnChainDaemon.rpc_pass,
-            port: args.chain_rpc_port,
+            port: spawnChainDaemon.rpc_port,
             user: spawnChainDaemon.rpc_user,
           },
           cbk),
           get_block_info: ({id}) => getBlockInfo({
             id,
             pass: spawnChainDaemon.rpc_pass,
-            port: args.chain_rpc_port,
+            port: spawnChainDaemon.rpc_port,
             user: spawnChainDaemon.rpc_user,
           }),
           kill: ({}, cbk) => killDockers({dockers}, cbk),
