@@ -40,9 +40,9 @@ const tests = [
 
 tests.forEach(({description, expected, generate}) => {
   return test(description, async t => {
-    const {close, port} = await fakeBitcoind({generate, addresses: ['other']});
+    const {kill, port} = await fakeBitcoind({generate, addresses: ['other']});
 
-    t.after(close);
+    t.after(kill);
 
     // Make two requests to mine to the same address at the same time
     const requests = [request, request].map(n => method({port, ...n}));

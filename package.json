@@ -15,7 +15,7 @@
     "async": "3.2.6",
     "asyncjs-util": "1.2.12",
     "dockerode": "5.0.1",
-    "lightning": "13.1.5"
+    "lightning": "13.1.6"
   },
   "description": "Spawn and control LN Docker daemons",
   "engines": {
@@ -42,7 +42,8 @@
     "url": "git+https://github.com/alexbosworth/ln-docker-daemons.git"
   },
   "scripts": {
-    "test": "node --experimental-test-coverage --test"
+    "integration-tests": "node --test \"test/integration/*.js\"",
+    "test": "node --experimental-test-coverage --test \"test/!(integration)/**/*.js\""
   },
-  "version": "8.1.2"
+  "version": "8.1.3"
 }

@@ -18,6 +18,7 @@ const deriveHmac = (s, p) => createHmac('sha256', s).update(p).digest('hex');
 const generateAuthSalt = () => randomBytes(16).toString('hex');
 const generatePassword = () => randomBytes(32).toString('base64');
 const interval = 100;
+const readyCheckTimeout = 1000 * 5;
 const times = 100;
 const trim = string => string.replace(/=+$/g, '');
 const zmqBlockPort = args => args.zmq_block_port || defaultZmqBlockPort;
@@ -106,9 +107,11 @@ module.exports = (args, cbk) => {
         ({generateAuth, spawnDocker}, cbk) =>
       {
         return asyncRetry({interval, times}, cbk => {
+          // A check that hangs is retried rather than waited on for long
           return getBlockchainInfo({
             pass: generateAuth.rpc_pass,
             port: spawnDocker.ports['18443/tcp'],
+            timeout: readyCheckTimeout,
             user: rpcUser,
           },
           cbk);

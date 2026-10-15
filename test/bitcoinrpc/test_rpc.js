@@ -14,6 +14,11 @@ const {stringify} = JSON;
 // Make a JSON-RPC response handler
 const reply = (code, body) => (req, res) => res.writeHead(code).end(body);
 
+// A fetch that holds nothing open and only settles when it is aborted
+const hangingFetch = (url, {signal}) => new Promise((resolve, reject) => {
+  return signal.addEventListener('abort', () => reject(signal.reason));
+});
+
 // Simplify the raw error in error details to whether it is an Error
 const simplify = err => {
   const [code, message, details] = err;
@@ -37,8 +42,8 @@ const startServer = ({refuse, respond}) => {
   return new Promise(resolve => {
     const server = createServer(respond);
 
-    // Close the server and any connections still open to it
-    const close = () => {
+    // Stop the server and any connections still open to it
+    const kill = () => {
       server.closeAllConnections();
 
       return server.close();
@@ -49,10 +54,10 @@ const startServer = ({refuse, respond}) => {
 
       // Exit early when connections to the server should be refused
       if (!!refuse) {
-        return server.close(() => resolve({close, port}));
+        return server.close(() => resolve({kill, port}));
       }
 
-      return resolve({close, port});
+      return resolve({kill, port});
     });
   });
 };
@@ -137,13 +142,30 @@ const tests = [
     error: [400, 'ExpectedPositiveTimeoutToExecuteRpcCall'],
     respond: reply(200, ''),
   },
+  // As when Node 22's fetch is left waiting on a socket that closed: no server
+  // is running and the request hangs, so only the timeout timer can keep the
+  // process going. Keep this last, since a failure here exits the process and
+  // cancels the tests after it.
+  {
+    args: {timeout: 50},
+    description: 'A request that holds nothing open still times out',
+    error: [503, 'TimedOutWaitingForRpcResponse', {cmd}],
+    hang: true,
+    refuse: true,
+    respond: reply(200, ''),
+  },
 ];
 
-tests.forEach(({args, description, error, expected, refuse, respond}) => {
+tests.forEach(({args, description, error, expected, hang, refuse, respond}) => {
   return test(description, async t => {
-    const {close, port} = await startServer({refuse, respond});
+    const {kill, port} = await startServer({refuse, respond});
 
-    t.after(close);
+    t.after(kill);
+
+    // Make the request hang without holding anything open
+    if (!!hang) {
+      t.mock.method(globalThis, 'fetch', hangingFetch);
+    }
 
     const call = method({cmd, host, params, port, ...args, ...credentials});
 

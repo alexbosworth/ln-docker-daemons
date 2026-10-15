@@ -12,6 +12,7 @@ const params = [];
   {
     pass: <RPC Password String>
     port: <RPC Port Number>
+    [timeout]: <Request Timeout Milliseconds Number>
     user: <RPC Username String>
   }
 
@@ -20,7 +21,7 @@ const params = [];
     blocks: <Best Chain Block Height Number>
   }
 */
-module.exports = ({pass, port, user}, cbk) => {
+module.exports = ({pass, port, timeout, user}, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
       // Check arguments
@@ -42,7 +43,7 @@ module.exports = ({pass, port, user}, cbk) => {
 
       // Execute request
       request: ['validate', ({}, cbk) => {
-        return rpc({cmd, host, pass, params, port, user}, cbk);
+        return rpc({cmd, host, pass, params, port, timeout, user}, cbk);
       }],
     },
     returnResult({reject, resolve, of: 'request'}, cbk));

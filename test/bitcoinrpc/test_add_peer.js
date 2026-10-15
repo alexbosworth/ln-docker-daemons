@@ -17,15 +17,15 @@ const startServer = respond => {
   return new Promise(resolve => {
     const server = createServer(respond);
 
-    // Close the server and any connections still open to it
-    const close = () => {
+    // Stop the server and any connections still open to it
+    const kill = () => {
       server.closeAllConnections();
 
       return server.close();
     };
 
     return server.listen(0, '127.0.0.1', () => {
-      return resolve({close, port: server.address().port});
+      return resolve({kill, port: server.address().port});
     });
   });
 };
@@ -58,9 +58,9 @@ const tests = [
 
 tests.forEach(({description, error, respond}) => {
   return test(description, async t => {
-    const {close, port} = await startServer(respond);
+    const {kill, port} = await startServer(respond);
 
-    t.after(close);
+    t.after(kill);
 
     const call = method({port, socket, ...credentials});
 

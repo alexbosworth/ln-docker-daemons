@@ -98,9 +98,9 @@ const tests = [
 
 tests.forEach(({args, chain, description, error, expected}) => {
   return test(description, async t => {
-    const {close, port} = await fakeBitcoind({addresses: chain});
+    const {kill, port} = await fakeBitcoind({addresses: chain});
 
-    t.after(close);
+    t.after(kill);
 
     const call = method({port, ...credentials, ...settings, ...args});
 

@@ -9,6 +9,8 @@ const lostCodes = ['ECONNRESET', 'EPIPE', 'UND_ERR_CLOSED', 'UND_ERR_SOCKET'];
 const {parse} = JSON;
 let requests = 0;
 const {stringify} = JSON;
+const timedOut = 'TimeoutError';
+const timeoutMessage = 'The operation was aborted due to timeout';
 const unsentCodes = ['ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT'];
 
 /** Call JSON RPC
@@ -64,7 +66,16 @@ module.exports = ({cmd, host, params, pass, port, timeout, user}, cbk) => {
 
       // Send request to the server, failures are returned rather than thrown
       request: ['validate', async ({}) => {
+        const controller = new AbortController();
         const credentials = Buffer.from(`${user}:${pass}`);
+
+        // This timer keeps the process alive until the request settles.
+        // AbortSignal.timeout does not, and on Node 22 a fetch can be left
+        // waiting on a closed socket, so the process would exit mid-request.
+        const timer = setTimeout(() => {
+          return controller.abort(new DOMException(timeoutMessage, timedOut));
+        },
+        timeout || defaultTimeout);
 
         try {
           const response = await fetch(`http://${host}:${port}/`, {
@@ -74,12 +85,14 @@ module.exports = ({cmd, host, params, pass, port, timeout, user}, cbk) => {
               'Content-Type': 'application/json',
             },
             method: 'POST',
-            signal: AbortSignal.timeout(timeout || defaultTimeout),
+            signal: controller.signal,
           });
 
           return {body: await response.text(), statusCode: response.status};
         } catch (err) {
           return {err};
+        } finally {
+          clearTimeout(timer);
         }
       }],
 

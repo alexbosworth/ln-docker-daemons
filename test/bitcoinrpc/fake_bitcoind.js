@@ -28,7 +28,7 @@ const {stringify} = JSON;
     addresses: [<Coinbase Address String>]
     calls: [<Called Method String>]
     [is_paused]: <Stopped Listening After First Chain Info Call Bool>
-    close: <Close Server Function> () => {}
+    kill: <Stop Server Function> () => {}
     port: <Listen Port Number>
   }
 */
@@ -154,7 +154,7 @@ module.exports = args => {
 
   return new Promise(resolve => {
     return server.listen(args.port || 0, localhost, () => {
-      started.close = () => {
+      started.kill = () => {
         started.is_closed = true;
 
         server.closeAllConnections();

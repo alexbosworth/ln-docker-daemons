@@ -118,7 +118,7 @@ tests.forEach(args => {
     const call = method({port, ...request, count: args.count});
     const bitcoind = await starting;
 
-    t.after(bitcoind.close);
+    t.after(bitcoind.kill);
 
     if (!!args.error) {
       await rejects(call, args.error);
