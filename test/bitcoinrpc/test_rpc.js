@@ -142,6 +142,41 @@ const tests = [
     error: [400, 'ExpectedPositiveTimeoutToExecuteRpcCall'],
     respond: reply(200, ''),
   },
+  {
+    args: {},
+    description: 'A fetch failure without a cause is returned as an error',
+    error: [
+      503,
+      'UnexpectedErrorFromRpcService',
+      {cmd, code: undefined, err: true, message: 'Unexpected failure'},
+    ],
+    fetch: () => Promise.reject(new Error('Unexpected failure')),
+  },
+  {
+    args: {cmd: undefined},
+    description: 'A command is expected',
+    error: [400, 'ExpectedCommandNameToExecuteRpcCall'],
+  },
+  {
+    args: {host: undefined},
+    description: 'A host is expected',
+    error: [400, 'ExpectedRpcHostToExecuteRpcCall'],
+  },
+  {
+    args: {params: undefined},
+    description: 'Command parameters are expected',
+    error: [400, 'ExpectedCommandParametersToExecuteRpcCall'],
+  },
+  {
+    args: {pass: undefined},
+    description: 'An RPC password is expected',
+    error: [400, 'ExpectedRpcPasswordToExecuteRpcCall'],
+  },
+  {
+    args: {user: undefined},
+    description: 'An RPC username is expected',
+    error: [400, 'ExpectedRpcUsernameToExecuteRpcCall'],
+  },
   // As when Node 22's fetch is left waiting on a socket that closed: no server
   // is running and the request hangs, so only the timeout timer can keep the
   // process going. Keep this last, since a failure here exits the process and
@@ -150,24 +185,24 @@ const tests = [
     args: {timeout: 50},
     description: 'A request that holds nothing open still times out',
     error: [503, 'TimedOutWaitingForRpcResponse', {cmd}],
-    hang: true,
+    fetch: hangingFetch,
     refuse: true,
     respond: reply(200, ''),
   },
 ];
 
-tests.forEach(({args, description, error, expected, hang, refuse, respond}) => {
+tests.forEach(({args, description, error, expected, fetch, ...server}) => {
   return test(description, async t => {
-    const {kill, port} = await startServer({refuse, respond});
+    const {kill, port} = await startServer(server);
 
     t.after(kill);
 
-    // Make the request hang without holding anything open
-    if (!!hang) {
-      t.mock.method(globalThis, 'fetch', hangingFetch);
+    // Use a stand-in for fetch when the test has one
+    if (!!fetch) {
+      t.mock.method(globalThis, 'fetch', fetch);
     }
 
-    const call = method({cmd, host, params, port, ...args, ...credentials});
+    const call = method({cmd, host, params, port, ...credentials, ...args});
 
     if (!!error) {
       const want = typeof error === 'function' ? error(port) : error;

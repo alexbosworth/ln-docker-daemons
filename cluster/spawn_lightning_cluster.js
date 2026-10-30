@@ -17,6 +17,11 @@ const line = arr => arr.slice(1).map((_, i) => [i, i + 1]);
 const pairs = n => n.map((x, i) => n.slice(i + 1).map(y => [x, y])).flat();
 const started = all => all.filter(n => !!n.value).map(n => n.value);
 
+// Stop nodes for cleanup, ignoring any failures to stop them
+const stopNodes = (nodes, cbk) => {
+  return asyncEach(nodes, ({kill}, cbk) => kill({}, () => cbk()), cbk);
+};
+
 /** Spawn a cluster of nodes
 
   When a channel capacity is specified, each node opens a channel of that size
@@ -66,8 +71,8 @@ module.exports = (args, cbk) => {
       },
 
       // Spawn nodes
-      spawn: ['validate', async () => {
-        return await asyncRetry({interval, times: 25}, async () => {
+      spawn: ['validate', ({}, cbk) => {
+        return asyncRetry({interval, times: 25}, cbk => {
           const spawning = [...Array(count(args.size))].map(() => {
             return spawnLightningDocker({
               generate_address: generateAddress,
@@ -76,110 +81,107 @@ module.exports = (args, cbk) => {
           });
 
           // Wait for every node to finish starting, even when one fails
-          const spawned = await Promise.allSettled(spawning);
+          return Promise.allSettled(spawning).then(spawned => {
+            const failure = spawned.find(n => n.status === 'rejected');
 
-          const failure = spawned.find(n => n.status === 'rejected');
+            // Stop the nodes that started so they are not left running
+            if (!!failure) {
+              return stopNodes(started(spawned), () => cbk(failure.reason));
+            }
 
-          // Stop the nodes that started so they are not left running
-          if (!!failure) {
-            await asyncEach(started(spawned), async ({kill}) => {
-              return await kill({});
-            });
+            return cbk(null, started(spawned).map(lightningDocker => {
+              const id = lightningDocker.public_key;
 
-            throw failure.reason;
-          }
+              const {lnd} = authenticatedLndGrpc({
+                cert: lightningDocker.cert,
+                macaroon: lightningDocker.macaroon,
+                socket: lightningDocker.socket,
+              });
 
-          return started(spawned).map(lightningDocker => {
-            const id = lightningDocker.public_key;
-
-            const {lnd} = authenticatedLndGrpc({
-              cert: lightningDocker.cert,
-              macaroon: lightningDocker.macaroon,
-              socket: lightningDocker.socket,
-            });
-
-            return {
-              id,
-              lnd,
-              chain: {
-                addPeer: lightningDocker.add_chain_peer,
-                generateToAddress: lightningDocker.generate,
-                getBlockInfo: lightningDocker.get_block_info,
-                socket: lightningDocker.chain_socket,
-              },
-              generate: ({address, count}, cbk) => {
-                return generateBlocks({
-                  address,
-                  count,
-                  lnd,
-                  generate: lightningDocker.generate,
+              return {
+                id,
+                lnd,
+                chain: {
+                  addPeer: lightningDocker.add_chain_peer,
+                  generateToAddress: lightningDocker.generate,
+                  getBlockInfo: lightningDocker.get_block_info,
+                  socket: lightningDocker.chain_socket,
                 },
-                cbk);
-              },
-              kill: lightningDocker.kill,
-              public_key: id,
-              rpc: ({macaroon}) => {
-                const {lnd} = authenticatedLndGrpc({
-                  macaroon,
-                  cert: lightningDocker.cert,
-                  socket: lightningDocker.socket,
-                });
+                generate: ({address, count}, cbk) => {
+                  return generateBlocks({
+                    address,
+                    count,
+                    lnd,
+                    generate: lightningDocker.generate,
+                  },
+                  cbk);
+                },
+                kill: lightningDocker.kill,
+                public_key: id,
+                rpc: ({macaroon}) => {
+                  const {lnd} = authenticatedLndGrpc({
+                    macaroon,
+                    cert: lightningDocker.cert,
+                    socket: lightningDocker.socket,
+                  });
 
-                return {lnd};
-              },
-              socket: lightningDocker.ln_socket,
-              tower: lightningDocker.tower_socket,
-            };
+                  return {lnd};
+                },
+                socket: lightningDocker.ln_socket,
+                tower: lightningDocker.tower_socket,
+              };
+            }));
           });
-        });
+        },
+        cbk);
       }],
 
       // Connect nodes in the cluster to each other
-      connect: ['spawn', async ({spawn}) => {
-        return await asyncEach(pairs(spawn), async pair => {
+      connect: ['spawn', ({spawn}, cbk) => {
+        return asyncEach(pairs(spawn), (pair, cbk) => {
           const [a, b] = pair.map(({chain}) => chain);
 
-          return await a.addPeer({socket: b.socket});
-        });
+          return a.addPeer({socket: b.socket}).then(() => cbk(), cbk);
+        },
+        cbk);
       }],
 
       // Open channels between neighboring nodes, one at a time
-      channels: ['connect', 'spawn', async ({spawn}) => {
+      channels: ['connect', 'spawn', ({spawn}, cbk) => {
         // Exit early when there is no channel capacity to create channels
         if (!args.capacity) {
-          return [];
+          return cbk(null, []);
         }
 
-        try {
-          return await asyncMapSeries(line(spawn), async ([from, to]) => {
-            const opened = await setupChannel({
-              capacity: args.capacity,
-              generate: spawn[from].generate,
-              lnd: spawn[from].lnd,
-              to: spawn[to],
-            });
+        return asyncMapSeries(line(spawn), ([from, to], cbk) => {
+          return setupChannel({
+            capacity: args.capacity,
+            generate: spawn[from].generate,
+            lnd: spawn[from].lnd,
+            to: spawn[to],
+          },
+          (err, res) => {
+            if (!!err) {
+              return cbk(err);
+            }
 
-            return {
+            return cbk(null, {
               from,
               to,
-              id: opened.id,
-              transaction_id: opened.transaction_id,
-              transaction_vout: opened.transaction_vout,
-            };
+              id: res.id,
+              transaction_id: res.transaction_id,
+              transaction_vout: res.transaction_vout,
+            });
           });
-        } catch (err) {
-          // Clean up the spawned nodes when channel setup fails
-          await asyncEach(spawn, async ({kill}) => await kill({}));
-
-          throw err;
-        }
+        },
+        cbk);
       }],
 
       // Final set of nodes
-      nodes: ['channels', 'connect', 'spawn', async ({channels, spawn}) => {
-        return {
+      nodes: ['channels', 'connect', 'spawn', ({channels, spawn}, cbk) => {
+        return cbk(null, {
           channels,
-          kill: ({}) => asyncEach(spawn, async ({kill}) => await kill({})),
+          kill: ({}) => asyncEach(spawn, ({kill}, cbk) => kill({}, cbk)),
           nodes: spawn.map(node => ({
             generate: node.generate,
             id: node.id,
@@ -189,9 +191,18 @@ module.exports = (args, cbk) => {
             socket: node.socket,
             tower: node.tower,
           })),
-        };
+        });
       }],
     },
-    returnResult({reject, resolve, of: 'nodes'}, cbk));
+    (err, res) => {
+      // Stop the spawned nodes when the cluster cannot be set up
+      if (!!err && !!res && !!res.spawn) {
+        return stopNodes(res.spawn, () => {
+          return returnResult({reject, resolve}, cbk)(err);
+        });
+      }
+
+      return returnResult({reject, resolve, of: 'nodes'}, cbk)(err, res);
+    });
   });
 };

@@ -6,10 +6,10 @@ const checkGenerated = require('./check_generated');
 const getBlockchainInfo = require('./get_blockchain_info');
 const rpc = require('./rpc');
 
-const checkInterval = 100;
-const checkTimes = 100;
 const cmd = 'generatetoaddress';
-const hasResponse = err => isCommandError(err) || !!(err[2] || {}).status;
+const defaultCheckInterval = 100;
+const defaultCheckTimes = 100;
+const hasResponse = err => isCommandError(err) || !!err[2].status;
 const host = 'localhost';
 const isCommandError = err => err[1] === 'UnexpectedErrorFromRpcCommand';
 const isDisconnected = err => isUnsent(err) || isLost(err);
@@ -21,11 +21,10 @@ const retryUnsent = {errorFilter: isUnsent, interval: 100, times: 5};
 
 /** Mine blocks to an address, checking the chain when the outcome is unclear
 
-  A request is only retried when it never reached bitcoind. When it fails in
-  any other way, it may have mined blocks, so the chain is checked for them.
-
   {
     address: <Address to Mine Outputs Towards String>
+    [check_interval]: <Unclear Outcome Poll Interval Milliseconds Number>
+    [check_times]: <Unclear Outcome Poll Times Number>
     count: <Generate Count Number>
     pass: <RPC Password String>
     port: <RPC Port Number>
@@ -35,28 +34,28 @@ const retryUnsent = {errorFilter: isUnsent, interval: 100, times: 5};
   @returns via cbk or Promise
   [<Generated Block Hash Hex String>]
 */
-module.exports = ({address, count, pass, port, user}, cbk) => {
+module.exports = (args, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
       // Check arguments
       validate: cbk => {
-        if (!address) {
+        if (!args.address) {
           return cbk([400, 'ExpectedAddressToMineBlocks']);
         }
 
-        if (!count) {
+        if (!args.count) {
           return cbk([400, 'ExpectedCountOfBlocksToMine']);
         }
 
-        if (!pass) {
+        if (!args.pass) {
           return cbk([400, 'ExpectedRpcPasswordToMineBlocks']);
         }
 
-        if (!port) {
+        if (!args.port) {
           return cbk([400, 'ExpectedRpcPortNumberToMineBlocks']);
         }
 
-        if (!user) {
+        if (!args.user) {
           return cbk([400, 'ExpectedRpcUsernameToMineBlocks']);
         }
 
@@ -66,17 +65,30 @@ module.exports = ({address, count, pass, port, user}, cbk) => {
       // Get the chain height to check against if the request fails
       getStart: ['validate', ({}, cbk) => {
         return asyncRetry(retryRead, cbk => {
-          return getBlockchainInfo({pass, port, user}, cbk);
+          return getBlockchainInfo({
+            pass: args.pass,
+            port: args.port,
+            user: args.user,
+          },
+          cbk);
         },
         cbk);
       }],
 
       // Generate the blocks, retrying when the request never reached bitcoind
       generate: ['getStart', ({}, cbk) => {
-        const params = [count, address];
+        const params = [args.count, args.address];
 
         return asyncRetry(retryUnsent, cbk => {
-          return rpc({cmd, host, pass, params, port, user}, cbk);
+          return rpc({
+            cmd,
+            host,
+            params,
+            pass: args.pass,
+            port: args.port,
+            user: args.user,
+          },
+          cbk);
         },
         (err, hashes) => {
           if (!err) {
@@ -95,23 +107,22 @@ module.exports = ({address, count, pass, port, user}, cbk) => {
 
       // Check the chain for blocks when the generate request failed
       check: ['generate', 'getStart', ({generate, getStart}, cbk) => {
-        // Exit early when bitcoind returned the generated block hashes, since
-        // the blocks are known to exist and there is nothing to check
+        // Exit early when bitcoind returned the generated block hashes
         if (!generate.err) {
           return cbk(null, generate.hashes);
         }
 
         return checkGenerated({
-          address,
-          count,
-          pass,
-          port,
-          user,
+          address: args.address,
+          count: args.count,
           err: generate.err,
-          interval: checkInterval,
+          interval: args.check_interval || defaultCheckInterval,
           is_finished: hasResponse(generate.err),
+          pass: args.pass,
+          port: args.port,
           start: getStart.blocks,
-          times: checkTimes,
+          times: args.check_times || defaultCheckTimes,
+          user: args.user,
         },
         cbk);
       }],

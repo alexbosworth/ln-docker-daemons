@@ -35,6 +35,16 @@ const tests = [
   {
     args: {
       tar: concat([
+        makeEntry({data: Buffer.alloc(0), name: 'empty', type: '0'}),
+        endMarker,
+      ]),
+    },
+    description: 'An empty first file is returned',
+    expected: {file: Buffer.alloc(0)},
+  },
+  {
+    args: {
+      tar: concat([
         makeEntry({data: Buffer.alloc(600, 1), name: 'pax', type: 'x'}),
         certEntry,
         endMarker,

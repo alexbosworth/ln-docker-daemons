@@ -17,6 +17,13 @@ const defaultDelay = 1;
 const interval = 100;
 const times = 1500;
 
+// Generate blocks, passing back a failure without async wrapping it
+const generateBlocks = ({generate, request}, cbk) => {
+  return Promise.resolve()
+    .then(() => generate(request))
+    .then(() => cbk(), cbk);
+};
+
 /** Setup channel
 
   {
@@ -43,40 +50,66 @@ module.exports = (args, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
       // Make sure the node is connected
-      addPeer: async () => {
-        await asyncRetry({interval, times}, async () => {
-          await args.generate({});
+      addPeer: cbk => {
+        return asyncRetry({interval, times}, cbk => {
+          return generateBlocks({
+            generate: args.generate,
+            request: {},
+          },
+          err => {
+            if (!!err) {
+              return cbk(err);
+            }
 
-          return await addPeer({
-            lnd: args.lnd,
-            public_key: args.to.id || args.to.public_key,
-            retry_count: defaultRetryCount,
-            retry_delay: defaultDelay,
-            socket: args.to.socket,
+            return addPeer({
+              lnd: args.lnd,
+              public_key: args.to.id || args.to.public_key,
+              retry_count: defaultRetryCount,
+              retry_delay: defaultDelay,
+              socket: args.to.socket,
+            },
+            cbk);
           });
-        });
+        },
+        cbk);
       },
 
       // Make sure the node has funds
-      generateFunds: async () => await args.generate({count}),
+      generateFunds: ['addPeer', ({}, cbk) => {
+        return generateBlocks({
+          generate: args.generate,
+          request: {count},
+        },
+        cbk);
+      }],
 
       // Open channel
-      chanOpen: async () => {
-        return await asyncRetry({interval, times}, async () => {
-          await args.generate({});
+      chanOpen: ['generateFunds', ({}, cbk) => {
+        return asyncRetry({interval, times}, cbk => {
+          return generateBlocks({
+            generate: args.generate,
+            request: {},
+          },
+          err => {
+            if (!!err) {
+              return cbk(err);
+            }
 
-          return await openChannel({
-            chain_fee_tokens_per_vbyte: defaultFee,
-            give_tokens: args.give_tokens,
-            is_private: args.is_private,
-            lnd: args.lnd,
-            local_tokens: args.capacity || channelCapacityTokens,
-            partner_csv_delay: args.partner_csv_delay,
-            partner_public_key: args.to.public_key || args.to.id,
-            socket: args.to.socket,
+            return openChannel({
+              chain_fee_tokens_per_vbyte: defaultFee,
+              give_tokens: args.give_tokens,
+              is_private: args.is_private,
+              lnd: args.lnd,
+              local_tokens: args.capacity || channelCapacityTokens,
+              partner_csv_delay: args.partner_csv_delay,
+              partner_public_key: args.to.public_key || args.to.id,
+              socket: args.to.socket,
+            },
+            cbk);
           });
-        });
-      },
+        },
+        cbk);
+      }],
 
       // Wait for pending
       waitPending: ['chanOpen', ({chanOpen}, cbk) => {
@@ -88,12 +121,16 @@ module.exports = (args, cbk) => {
       }],
 
       // Generate blocks to confirm the pending channel
-      generate: ['waitPending', async ({}) => {
-        return await args.generate({count: confCount});
+      generate: ['waitPending', ({}, cbk) => {
+        return generateBlocks({
+          generate: args.generate,
+          request: {count: confCount},
+        },
+        cbk);
       }],
 
       // Wait for open
-      channel: ['chanOpen', ({chanOpen}, cbk) => {
+      channel: ['chanOpen', 'generate', ({chanOpen}, cbk) => {
         return waitForChannel({
           id: chanOpen.transaction_id,
           lnd: args.lnd,

@@ -61,20 +61,23 @@ module.exports = ({arguments, expose, image, ports}, cbk) => {
       docker: ['validate', ({}, cbk) => cbk(null, new Dockerode({}))],
 
       // Check if the image is cached
-      getImage: ['docker', async ({docker}) => {
-        try {
-          return await docker.getImage(image).inspect();
-        } catch (err) {
-          if (err.statusCode === 404) {
-            return;
+      getImage: ['docker', ({docker}, cbk) => {
+        return docker.getImage(image).inspect((err, res) => {
+          // Exit early when the image is not cached
+          if (!!err && err.statusCode === 404) {
+            return cbk();
           }
 
-          if (err.code === 'ECONNREFUSED') {
-            throw [503, 'CannotConnectToDockerDaemon'];
+          if (!!err && err.code === 'ECONNREFUSED') {
+            return cbk([503, 'CannotConnectToDockerDaemon']);
           }
 
-          throw [503, 'UnexpectedErrorGettingDockerImage', {err}];
-        }
+          if (!!err) {
+            return cbk([503, 'UnexpectedErrorGettingDockerImage', {err}]);
+          }
+
+          return cbk(null, res);
+        });
       }],
 
       // Pull the docker image

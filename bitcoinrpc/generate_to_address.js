@@ -8,12 +8,10 @@ const queue = asyncQueue(mineBlocks, 1);
 
 /** Generate blocks and mine coinbase outputs to an address
 
-  Requests run one at a time. When the outcome of a request is unclear, blocks
-  on top of where it started can then only be from that request, unless they
-  were mined outside of this process.
-
   {
     address: <Address to Mine Outputs Towards String>
+    [check_interval]: <Unclear Outcome Poll Interval Milliseconds Number>
+    [check_times]: <Unclear Outcome Poll Times Number>
     [count]: <Generate Count Number>
     pass: <RPC Password String>
     port: <RPC Port Number>
@@ -23,38 +21,40 @@ const queue = asyncQueue(mineBlocks, 1);
   @returns via cbk or Promise
   [<Generated Block Hash Hex String>]
 */
-module.exports = ({address, count, pass, port, user}, cbk) => {
+module.exports = (args, cbk) => {
   return new Promise((resolve, reject) => {
     return asyncAuto({
       // Check arguments
       validate: cbk => {
-        if (!address) {
+        if (!args.address) {
           return cbk([400, 'ExpectedAddressToGenerateToAddress']);
         }
 
-        if (!pass) {
+        if (!args.pass) {
           return cbk([400, 'ExpectedRpcPasswordToGenerateToAddress']);
         }
 
-        if (!port) {
+        if (!args.port) {
           return cbk([400, 'ExpectedRpcPortNumberToGenerateToAddress']);
         }
 
-        if (!user) {
+        if (!args.user) {
           return cbk([400, 'ExpectedRpcUsernameToGenerateToAddresss']);
         }
 
         return cbk();
       },
 
-      // Mine the blocks once earlier generate requests are done
+      // Mine after earlier requests so that new blocks are from this request
       generate: ['validate', ({}, cbk) => {
         return queue.push({
-          address,
-          pass,
-          port,
-          user,
-          count: count || [address].length,
+          address: args.address,
+          check_interval: args.check_interval,
+          check_times: args.check_times,
+          count: args.count || [args.address].length,
+          pass: args.pass,
+          port: args.port,
+          user: args.user,
         },
         cbk);
       }],

@@ -9,7 +9,13 @@ const method = require('./../../bitcoinrpc/generate_to_address');
 const chain = ['other'];
 const {hashAt} = fakeBitcoind;
 const isGenerate = n => n === 'generatetoaddress';
-const request = {address: 'address', pass: 'p', user: 'u'};
+const request = {
+  address: 'address',
+  check_interval: 10,
+  check_times: 3,
+  pass: 'p',
+  user: 'u',
+};
 const startDelayMs = 150;
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -106,14 +112,39 @@ const tests = [
   },
 ];
 
+const invalid = [
+  {
+    args: {address: undefined},
+    description: 'An address is expected',
+    error: [400, 'ExpectedAddressToGenerateToAddress'],
+  },
+  {
+    args: {pass: undefined},
+    description: 'An RPC password is expected',
+    error: [400, 'ExpectedRpcPasswordToGenerateToAddress'],
+  },
+  {
+    args: {port: undefined},
+    description: 'An RPC port is expected',
+    error: [400, 'ExpectedRpcPortNumberToGenerateToAddress'],
+  },
+  {
+    args: {user: undefined},
+    description: 'An RPC username is expected',
+    error: [400, 'ExpectedRpcUsernameToGenerateToAddresss'],
+  },
+];
+
 tests.forEach(args => {
   return test(args.description, async t => {
     const port = await freePort();
 
-    // Start bitcoind after any delay to have the first requests refused
-    const starting = wait(args.delay).then(() => {
+    const start = () => {
       return fakeBitcoind({port, addresses: chain, generate: args.generate});
-    });
+    };
+
+    // Start bitcoind after any delay to have the first requests refused
+    const starting = !args.delay ? start() : wait(args.delay).then(start);
 
     const call = method({port, ...request, count: args.count});
     const bitcoind = await starting;
@@ -130,5 +161,11 @@ tests.forEach(args => {
     deepEqual(bitcoind.calls.filter(isGenerate).length, 1);
     deepEqual(bitcoind.addresses, args.expected.addresses);
     deepEqual(!!bitcoind.is_paused, args.generate === 'refuse');
+  });
+});
+
+invalid.forEach(({args, description, error}) => {
+  return test(description, async () => {
+    return await rejects(method({...request, port: 1, ...args}), error);
   });
 });

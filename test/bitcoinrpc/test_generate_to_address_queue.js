@@ -5,7 +5,13 @@ const fakeBitcoind = require('./fake_bitcoind');
 const method = require('./../../bitcoinrpc/generate_to_address');
 
 const {hashAt} = fakeBitcoind;
-const request = {address: 'address', pass: 'p', user: 'u'};
+const request = {
+  address: 'address',
+  check_interval: 10,
+  check_times: 3,
+  pass: 'p',
+  user: 'u',
+};
 
 const tests = [
   {

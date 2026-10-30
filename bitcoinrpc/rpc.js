@@ -1,4 +1,5 @@
 const asyncAuto = require('async/auto');
+const asyncify = require('async/asyncify');
 const {returnResult} = require('asyncjs-util');
 
 const defaultTimeout = 1000 * 30;
@@ -24,10 +25,6 @@ const unsentCodes = ['ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT'];
     [timeout]: <Request Timeout Milliseconds Number>
     user: <Username String>
   }
-
-  ConnectionToBitcoindRpcServiceFailed means the request never reached the
-  server. ConnectionToBitcoindRpcServiceLost and TimedOutWaitingForRpcResponse
-  mean the server may have executed the command.
 
   @returns via cbk or Promise
   <Result Object>
@@ -69,9 +66,7 @@ module.exports = ({cmd, host, params, pass, port, timeout, user}, cbk) => {
         const controller = new AbortController();
         const credentials = Buffer.from(`${user}:${pass}`);
 
-        // This timer keeps the process alive until the request settles.
-        // AbortSignal.timeout does not, and on Node 22 a fetch can be left
-        // waiting on a closed socket, so the process would exit mid-request.
+        // Unlike AbortSignal.timeout, this timer keeps the process alive
         const timer = setTimeout(() => {
           return controller.abort(new DOMException(timeoutMessage, timedOut));
         },
@@ -88,11 +83,15 @@ module.exports = ({cmd, host, params, pass, port, timeout, user}, cbk) => {
             signal: controller.signal,
           });
 
-          return {body: await response.text(), statusCode: response.status};
-        } catch (err) {
-          return {err};
-        } finally {
+          const body = await response.text();
+
           clearTimeout(timer);
+
+          return {body, statusCode: response.status};
+        } catch (err) {
+          clearTimeout(timer);
+
+          return {err};
         }
       }],
 
@@ -105,6 +104,7 @@ module.exports = ({cmd, host, params, pass, port, timeout, user}, cbk) => {
           return cbk();
         }
 
+        // The request timed out so the command may have been executed
         if (isTimeout(err)) {
           return cbk([503, 'TimedOutWaitingForRpcResponse', {cmd}]);
         }
@@ -138,22 +138,22 @@ module.exports = ({cmd, host, params, pass, port, timeout, user}, cbk) => {
       }],
 
       // Parse the response body as a JSON-RPC response object
-      parseBody: ['checkRequest', 'request', ({request}, cbk) => {
+      parseBody: ['checkRequest', 'request', asyncify(({request}) => {
         const details = {cmd, status: request.statusCode};
-        let body;
 
         try {
-          body = parse(request.body);
+          const body = parse(request.body);
+
+          if (!!body && typeof body === 'object') {
+            return body;
+          }
         } catch (err) {
-          return cbk([503, 'FailedToParseRpcServiceResponse', details]);
+          throw [503, 'FailedToParseRpcServiceResponse', details];
         }
 
-        if (!body || typeof body !== 'object') {
-          return cbk([503, 'UnexpectedRpcServiceResponse', details]);
-        }
-
-        return cbk(null, body);
-      }],
+        // The body is JSON but not an object, such as null or a number
+        throw [503, 'UnexpectedRpcServiceResponse', details];
+      })],
 
       // Check the response for a command failure and pull out the result
       result: ['parseBody', 'request', ({parseBody, request}, cbk) => {

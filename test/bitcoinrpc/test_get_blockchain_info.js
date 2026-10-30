@@ -43,6 +43,21 @@ const tests = [
     error: [503, 'TimedOutWaitingForRpcResponse', {cmd: 'getblockchaininfo'}],
     respond: () => {},
   },
+  {
+    args: {pass: undefined},
+    description: 'An RPC password is expected',
+    error: [400, 'ExpectedRpcPasswordToGetBlockchainInfo'],
+  },
+  {
+    args: {port: undefined},
+    description: 'An RPC port is expected',
+    error: [400, 'ExpectedRpcPortNumberToGetBlockchainInfo'],
+  },
+  {
+    args: {user: undefined},
+    description: 'An RPC username is expected',
+    error: [400, 'ExpectedRpcUsernameToGetBlockchainInfo'],
+  },
 ];
 
 // The test time limit is well under the default RPC timeout, so a timeout
@@ -53,7 +68,7 @@ tests.forEach(({args, description, error, expected, respond}) => {
 
     t.after(kill);
 
-    const call = method({port, ...args, ...credentials});
+    const call = method({port, ...credentials, ...args});
 
     if (!!error) {
       return await rejects(call, err => {

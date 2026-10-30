@@ -54,15 +54,35 @@ const tests = [
       result: null,
     })),
   },
+  {
+    args: {pass: undefined},
+    description: 'An RPC password is expected',
+    error: [400, 'ExpectedRpcPasswordToAddChainPeer'],
+  },
+  {
+    args: {port: undefined},
+    description: 'An RPC port is expected',
+    error: [400, 'ExpectedRpcPortNumberToAddChainPeer'],
+  },
+  {
+    args: {socket: undefined},
+    description: 'A socket to connect to is expected',
+    error: [400, 'ExpectedSocketToAddChainPeer'],
+  },
+  {
+    args: {user: undefined},
+    description: 'An RPC username is expected',
+    error: [400, 'ExpectedRpcUsernameToAddChainPeer'],
+  },
 ];
 
-tests.forEach(({description, error, respond}) => {
+tests.forEach(({args, description, error, respond}) => {
   return test(description, async t => {
     const {kill, port} = await startServer(respond);
 
     t.after(kill);
 
-    const call = method({port, socket, ...credentials});
+    const call = method({port, socket, ...credentials, ...args});
 
     if (!!error) {
       return await rejects(call, err => {

@@ -19,9 +19,13 @@ const makeMocks = ({failure, utxos}) => {
     pk_script: '00',
   };
 
-  // Return the next count of UTXOs on each poll, then keep returning the last
+  // Return the next count of UTXOs per poll, the last repeating, null fails
   const listUnspent = ({}, cbk) => {
     const count = utxos[Math.min(calls.polls++, utxos.length - 1)];
+
+    if (count === null) {
+      return cbk({details: 'Unavailable'});
+    }
 
     return cbk(null, {utxos: [...Array(count)].map(() => utxo)});
   };
@@ -65,6 +69,17 @@ const tests = [
     description: 'A generate failure is returned',
     error: [503, 'ConnectionToBitcoindRpcServiceFailed'],
     failure: [503, 'ConnectionToBitcoindRpcServiceFailed'],
+  },
+  {
+    args: {count: 100},
+    description: 'A failure to get UTXOs is retried',
+    expected: {generated: [{address: 'created', count: 100}], polls: 3},
+    utxos: [null, null, 1],
+  },
+  {
+    args: {generate: undefined},
+    description: 'A generate function is expected',
+    error: [400, 'ExpectedGenerateFunctionToGenerateBlocks'],
   },
   {
     args: {lnd: undefined},

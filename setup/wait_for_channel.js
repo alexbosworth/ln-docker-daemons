@@ -60,35 +60,45 @@ module.exports = (args, cbk) => {
       },
 
       // Find channel in channels list
-      channel: ['validate', async () => {
-        return await asyncRetry({interval, times}, async () => {
-          const {channels} = await getChannels({lnd: args.lnd});
+      channel: ['validate', ({}, cbk) => {
+        return asyncRetry({interval, times}, cbk => {
+          return getChannels({lnd: args.lnd}, (err, res) => {
+            if (!!err) {
+              return cbk(err);
+            }
 
-          const chan = channels.find(channel => {
-            const txVout = channel.transaction_vout;
+            const chan = res.channels.find(channel => {
+              const isFunding = channel.transaction_id === args.id;
 
-            return channel.transaction_id === args.id && txVout === args.vout;
+              return isFunding && channel.transaction_vout === args.vout;
+            });
+
+            if (!chan) {
+              return cbk([503, 'FailedToFindChannelWithTransactionId']);
+            }
+
+            return cbk(null, chan);
           });
-
-          if (!chan) {
-            throw new Error('FailedToFindChannelWithTransactionId');
-          }
-
-          return chan;
-        });
+        },
+        cbk);
       }],
 
       // Check channel fully created
-      gotChannel: ['channel', async ({channel}) => {
-        return await asyncRetry({interval, times}, async () => {
-          const {policies} = await getChannel({id: channel.id, lnd: args.lnd});
+      gotChannel: ['channel', ({channel}, cbk) => {
+        return asyncRetry({interval, times}, cbk => {
+          return getChannel({id: channel.id, lnd: args.lnd}, (err, res) => {
+            if (!!err) {
+              return cbk(err);
+            }
 
-          if (!!policies.find(n => !n.cltv_delta)) {
-            throw new Error('FailedToFindChannelWithFullPolicyDetails');
-          }
+            if (!!res.policies.find(n => !n.cltv_delta)) {
+              return cbk([503, 'FailedToFindChannelWithFullPolicyDetails']);
+            }
 
-          return;
-        });
+            return cbk();
+          });
+        },
+        cbk);
       }],
     },
     returnResult({reject, resolve, of: 'channel'}, cbk));

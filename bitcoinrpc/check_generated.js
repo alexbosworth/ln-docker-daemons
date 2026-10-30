@@ -13,13 +13,6 @@ const txVerbosityFlag = 2;
 
 /** Check what blocks a failed generate request made
 
-  Generate requests run one at a time, so blocks on top of the start height
-  can only be from this request, unless they were mined outside this process.
-  They must all pay to the address, and there can't be more than requested.
-
-  A request that may still be running is given time to finish mining. When a
-  request finished without mining anything, its original error is returned.
-
   {
     address: <Coinbase Output Address String>
     count: <Requested Blocks Count Number>
